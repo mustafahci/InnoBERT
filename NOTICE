@@ -1,0 +1,15 @@
+InnoBERT
+Copyright 2026 Mustafa Ahci
+
+InnoBERT is independently developed from the FinBERT pretrained model associated with:
+
+Huang, Allen H., Hui Wang, and Yi Yang. "FinBERT: A Large Language Model for
+Extracting Information from Financial Text." Contemporary Accounting Research
+40, no. 2 (2023): 806-841.
+
+Upstream project: https://github.com/yya518/FinBERT
+Upstream checkpoint: https://huggingface.co/yiyanghkust/finbert-pretrain
+
+InnoBERT is not affiliated with or endorsed by the original FinBERT or BERT developers.
+The InnoBERT files differ from the upstream model through downstream fine-tuning,
+an eight-label innovation taxonomy, threshold rules, and inference preprocessing.

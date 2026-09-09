@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "innobert"
+version = "0.1.0"
+description = "Classify innovation-related business text with a fine-tuned FinBERT model."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "Mustafa Ahci"}]
+license = "Apache-2.0"
+keywords = ["innovation", "FinBERT", "text-classification", "accounting"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "numpy>=1.24",
+  "pandas>=2.0",
+  "safetensors>=0.4",
+  "torch>=2.1",
+  "transformers>=4.40",
+]
+
+[project.optional-dependencies]
+noun-chunks = ["spacy>=3.7", "lemminflect>=0.2.3"]
+notebook = ["jupyterlab>=4", "pyarrow>=14"]
+dev = ["build>=1", "pytest>=8"]
+
+[project.urls]
+Repository = "https://github.com/mustafahci/InnoBERT"
+Model = "https://huggingface.co/mustafahci/InnoBERT"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+innobert = ["resources/*.txt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

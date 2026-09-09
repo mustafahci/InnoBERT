@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use InnoBERT, please cite this software and the associated paper when its final citation is available."
+title: "InnoBERT: FinBERT Fine-Tuned for Innovation Classification"
+type: software
+authors:
+  - family-names: "Ahci"
+    given-names: "Mustafa"
+version: 0.1.0
+license: Apache-2.0
+repository-code: "https://github.com/mustafahci/InnoBERT"
+url: "https://huggingface.co/mustafahci/InnoBERT"
+keywords:
+  - innovation
+  - FinBERT
+  - accounting
+  - multi-label text classification
