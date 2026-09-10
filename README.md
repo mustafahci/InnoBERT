@@ -11,9 +11,9 @@ The eight granular categories are product, process, organizational, marketing, b
 | sustainability | sustainability |
 | AI | AI |
 
-Uncategorized is retained as a fallback rather than treated as an innovation category.
+Uncategorized is a category for terms irrelevant to innovation and retained as a fallback category.
 
-The innovation-type framework is informed by the Oslo Manual 2018. InnoBERT extends the reporting taxonomy with sustainability, AI, and an uncategorized outcome for the purposes of textual classification.
+The innovation-type framework is informed by the Oslo Manual 2018. InnoBERT extends the reporting taxonomy with business model, sustainability, AI, and an uncategorized outcome for the purposes of textual classification.
 
 ## Installation
 
@@ -70,8 +70,6 @@ For terminal scripts, use:
 ```bash
 hf auth login
 ```
-
-Never place an access token directly in a notebook or commit it to Git.
 
 ## Load the model
 
