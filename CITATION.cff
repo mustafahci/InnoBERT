@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use InnoBERT, please cite the associated paper."
-title: "InnoBERT: FinBERT Fine-Tuned for Innovation Classification"
+title: "InnoBERT: LLM-based Innovation Classification"
 type: software
 authors:
   - family-names: "Ahci"
