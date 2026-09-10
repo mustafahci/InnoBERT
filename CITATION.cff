@@ -1,11 +1,11 @@
 cff-version: 1.2.0
-message: "If you use InnoBERT, please cite this software and the associated paper when its final citation is available."
+message: "If you use InnoBERT, please cite the associated paper."
 title: "InnoBERT: FinBERT Fine-Tuned for Innovation Classification"
 type: software
 authors:
   - family-names: "Ahci"
     given-names: "Mustafa"
-version: 0.1.2
+version: 0.2.0
 license: Apache-2.0
 repository-code: "https://github.com/mustafahci/InnoBERT"
 url: "https://huggingface.co/mustafahci/InnoBERT"
@@ -14,3 +14,14 @@ keywords:
   - FinBERT
   - accounting
   - multi-label text classification
+preferred-citation:
+  type: article
+  authors:
+    - family-names: "Ahci"
+      given-names: "Mustafa"
+    - family-names: "Joos"
+      given-names: "Philip"
+  title: "Beyond Invention: The Composition and Economic Relevance of Innovation-Related Capabilities"
+  year: 2026
+  doi: "10.2139/ssrn.4797745"
+  url: "https://ssrn.com/abstract=4797745"

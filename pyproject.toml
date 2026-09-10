@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "innobert"
-version = "0.1.2"
+version = "0.2.0"
 description = "Classify innovation-related business text with a fine-tuned FinBERT model."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 authors = [{name = "Mustafa Ahci"}]
 license = "Apache-2.0"
 keywords = ["innovation", "FinBERT", "text-classification", "accounting"]
@@ -26,11 +26,12 @@ dependencies = [
   "safetensors>=0.4",
   "torch>=2.1",
   "transformers>=4.40",
+  "tqdm>=4.66",
 ]
 
 [project.optional-dependencies]
 noun-chunks = ["spacy>=3.7", "lemminflect>=0.2.3"]
-notebook = ["jupyterlab>=4", "pyarrow>=14"]
+notebook = ["jupyterlab>=4", "ipykernel>=6", "pyarrow>=14"]
 dev = ["build>=1", "pytest>=8"]
 
 [project.urls]

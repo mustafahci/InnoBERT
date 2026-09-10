@@ -12,7 +12,7 @@ tags:
   - multi-label-classification
 ---
 
-# InnoBERT model card (draft)
+# InnoBERT model card
 
 ## Model description
 
@@ -28,6 +28,8 @@ InnoBERT is a BERT-base sequence classifier fine-tuned from `yiyanghkust/finbert
 8. `inno_uncategorized`
 
 The supplied checkpoint is a `BertForSequenceClassification` model with 12 layers, hidden size 768, 12 attention heads, 30,873 vocabulary items, and an 8-by-768 classifier head.
+
+The Python package reports reader-facing granular labels without the internal `inno_` prefix and maps process, organizational, marketing, and business-model predictions to the main category `business_process`. This reporting hierarchy does not alter the model outputs or thresholds.
 
 ## Intended use
 
@@ -48,15 +50,12 @@ Default thresholds are 0.65, 0.45, 0.55, 0.55, 0.45, 0.50, 0.50, and 0.25 in the
 - Windowed paragraph scores use category-wise maxima and are not calibrated paragraph-level probabilities.
 - Results can vary if noun chunks are extracted with a different spaCy model or version.
 - Disclosure language is not equivalent to realized innovation capability or outcomes.
+- The training data and annotations are not distributed, so users cannot reconstruct training from this release.
+- Applying the classifier outside the disclosure setting, industries, or years represented in development requires separate validation.
 
-## Training and evaluation details to complete
+## Citation
 
-- training-data description and permitted disclosure;
-- train/validation/test split and random seed;
-- class balance and annotation procedure;
-- per-label validation metrics tied to the released checkpoint;
-- known subgroup, industry, and temporal performance differences;
-- paper citation and author contact;
+Ahci, Mustafa and Joos, Philip, **Beyond Invention: The Composition and Economic Relevance of Innovation-Related Capabilities** (Updated September 1, 2026). Available at SSRN: https://ssrn.com/abstract=4797745 or http://dx.doi.org/10.2139/ssrn.4797745.
 
 ## Upstream attribution
 

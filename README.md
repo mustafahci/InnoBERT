@@ -1,31 +1,75 @@
 # InnoBERT
 
-InnoBERT classifies business text into eight innovation categories using a FinBERT model fine-tuned for multi-label innovation classification. It accepts individual texts, aligned batches, or pandas DataFrames and runs on CPU, CUDA, or Apple MPS.
+InnoBERT classifies innovation-related business text using a FinBERT model fine-tuned for multi-label classification. It accepts individual terms, raw documents, aligned lists, and pandas DataFrames; supports noun-chunk, sentence, and paragraph processing; and runs on CPU, CUDA GPU, or Apple MPS.
 
-> Release status: private alpha. The code and fine-tuned model are licensed under Apache License 2.0. Model weights are intentionally not stored in this Git repository.
+The eight granular categories are product, process, organizational, marketing, business model, sustainability, AI, and uncategorized. They are also organized into four main innovation categories:
+
+| Granular category | Main category |
+| --- | --- |
+| product | product |
+| process, organizational, marketing, business model | business process |
+| sustainability | sustainability |
+| AI | AI |
+
+Uncategorized is retained as a fallback rather than treated as an innovation category.
 
 ## Installation
 
-Local development install:
+Python 3.10–3.12 is supported. Python 3.11 is recommended.
+
+### Conda and Jupyter
+
+Install [Anaconda or Miniconda](https://www.anaconda.com/docs/getting-started/main), open Anaconda Prompt on Windows or a terminal on macOS/Linux, and run:
 
 ```bash
-python -m pip install -e .
+conda create -n innobert python=3.11 -y
+conda activate innobert
+python -m pip install --upgrade pip
+python -m pip install "innobert[noun-chunks,notebook] @ git+https://github.com/mustafahci/InnoBERT.git@main"
+python -m spacy download en_core_web_lg
+python -m ipykernel install --user --name innobert --display-name "Python (InnoBERT)"
+jupyter lab
 ```
 
-Include noun-chunk processing and install the pinned spaCy language model separately:
+Select **Python (InnoBERT)** as the notebook kernel. Always use `python -m pip` after activating the environment so packages are installed into the selected interpreter.
+
+### Existing Python or IPython environment
 
 ```bash
-python -m pip install -e ".[noun-chunks,notebook]"
+python -m pip install "innobert[noun-chunks,notebook] @ git+https://github.com/mustafahci/InnoBERT.git@main"
 python -m spacy download en_core_web_lg
 ```
 
-After the repository owner and first release tag are configured:
+Noun-chunk extraction uses `en_core_web_lg` by default to preserve the preprocessing used in development. Sentence, paragraph, and already-extracted term processing do not require spaCy.
 
-```bash
-python -m pip install "innobert[noun-chunks] @ git+https://github.com/mustafahci/InnoBERT.git@v0.1.0"
+### Google Colab
+
+Run these cells at the beginning of a Colab notebook:
+
+```python
+%pip install "innobert[noun-chunks] @ git+https://github.com/mustafahci/InnoBERT.git@main"
+!python -m spacy download en_core_web_lg
 ```
 
-The model weights should be hosted in a separate Hugging Face model repository. They may also be loaded from an extracted local model directory.
+Then restart the runtime if Colab requests it. To use a GPU, select a GPU runtime and keep `device="auto"`.
+
+## Authenticate with Hugging Face
+
+The model downloads from `mustafahci/InnoBERT`. When authentication is required, use the secure login prompt:
+
+```python
+from huggingface_hub import notebook_login
+
+notebook_login()
+```
+
+For terminal scripts, use:
+
+```bash
+hf auth login
+```
+
+Never place an access token directly in a notebook or commit it to Git.
 
 ## Load the model
 
@@ -34,212 +78,240 @@ from innobert import InnoBERT
 
 classifier = InnoBERT.from_pretrained(
     "mustafahci/InnoBERT",
-    device="auto",  # auto, cpu, cuda, cuda:0, or mps
-    spacy_model="en_core_web_lg",  # used only by noun_chunk mode
-)
-```
-
-While the model repository is private, first authenticate locally with Hugging Face or pass an access token through a secure environment variable:
-
-```bash
-hf auth login
-```
-
-```python
-import os
-
-classifier = InnoBERT.from_pretrained(
-    "mustafahci/InnoBERT",
-    token=os.environ["HF_TOKEN"],
-    revision="83bc233b62f981503c0dbb40324b11f428d5a8c7",
     device="auto",
+    spacy_model="en_core_web_lg",
 )
 ```
 
-Do not place access tokens directly in notebooks or commit them to Git. The `revision` argument is optional but gives an immutable model version.
+`device="auto"` selects CUDA, then Apple MPS, then CPU. Users can explicitly request `cpu`, `cuda`, `cuda:0`, or `mps`.
 
-For the supplied local archive, extract it first and pass the directory containing `config.json`, `model.safetensors`, and the tokenizer files. Passing the ZIP itself raises an error deliberately.
-
-## Classify aligned terms
-
-`term` is for already-extracted terms. Each term can have a different industry and year:
+## Classify supplied terms
 
 ```python
 results = classifier.predict(
-    ["cloud-based document platform", "automated production system"],
-    industry=["Software", "Manufacturing"],
-    year=[2024, 2023],
+    [
+        "cloud-based analytics platform",
+        "automated inventory replenishment system",
+        "employee collaboration network",
+    ],
+    industry=["Software", "Retail", "Manufacturing"],
+    year=[2024, 2023, 2022],
     unit="term",
 )
+
+results
 ```
 
-A scalar context is broadcast:
+A scalar industry or year is broadcast to every input. Aligned lists must have exactly one value per text.
+
+## Process raw text
 
 ```python
-results = classifier.predict(
-    ["mobile payment service", "recommendation engine"],
-    industry="Retail",
-    year=2024,
-    unit="term",
-)
+text = """Example Corporation expanded its cloud-based subscription platform for
+small-business customers and introduced personalized product recommendations.
+It deployed an artificial-intelligence forecasting tool, real-time analytics,
+and an automated inventory replenishment system.
+
+The company created a cross-functional product team and an employee collaboration
+network. A data-driven order-routing process improved warehouse allocation,
+distribution operations, purchasing, and delivery scheduling.
+
+It also adopted an energy-efficient manufacturing process and recyclable packaging
+materials to reduce operating emissions and waste."""
 ```
 
-If parallel lists differ in length, the package stops with an error showing the expected and received counts. It never silently recycles, drops, or reorders context values.
-
-## Process documents by noun chunk, sentence, or paragraph
+### Noun chunks
 
 ```python
-text = """We introduced a cloud-based analytics platform. It automates inventory planning.
-
-The redesigned subscription model supports smaller customers."""
-
-noun_chunks = classifier.predict(
+noun_results = classifier.predict(
     text,
-    industry="Software",
+    industry="Business Services",
     year=2024,
     filer_name="Example Corporation",
     unit="noun_chunk",
 )
-
-sentences = classifier.predict(text, unit="sentence")
-paragraphs = classifier.predict(text, unit="paragraph")
 ```
 
-The modes preserve the two notebook pipelines:
+Noun-chunk mode extracts short candidate terms first and then classifies them using the validated industry–year prompt.
 
-| Unit | Segmentation | Default model input | Default uncategorized rule | Long-text default |
-| --- | --- | --- | --- | --- |
-| `term` | none; one input is one term | exact industry–year training prompt | gatekeeper | truncate at 64 tokens |
-| `noun_chunk` | final 2026 spaCy extraction | exact industry–year training prompt | gatekeeper | truncate at 64 tokens |
-| `sentence` | conference-call regex splitter | raw sentence | fallback | truncate at 160 tokens |
-| `paragraph` | blank-line boundaries | raw paragraph | fallback | overlapping 160-token windows |
+### Sentences
 
-For sentence or paragraph experiments that feed industry and year to the model, set `context_mode="industry_year"`. This wraps the full unit in the original term-training template and is therefore an extension, not the validated training use. Conversely, `context_mode="none"` removes context from term or noun-chunk inputs.
+```python
+sentence_results = classifier.predict(text, unit="sentence")
+```
 
-## DataFrame input
+### Paragraphs
+
+```python
+paragraph_results = classifier.predict(text, unit="paragraph")
+```
+
+Sentence and paragraph processing use raw text and the fallback uncategorized rule by default. These modes are documented applications beyond the contextual term input used for training.
+
+## DataFrame input and identifiers
 
 ```python
 import pandas as pd
 
 documents = pd.DataFrame({
-    "document_id": ["A", "B"],
-    "business_text": ["We launched a digital service.", "We automated quality control."],
-    "industry_name": ["Software", "Manufacturing"],
-    "fyear": [2024, 2023],
+    "gvkey": ["001234", "001234"],
+    "fyear": [2023, 2024],
+    "Industry": ["Business Services", "Business Services"],
+    "long_passage": [text, text],
 })
 
 results = classifier.predict(
     documents,
-    unit="sentence",
-    text_col="business_text",
-    industry_col="industry_name",
+    unit="noun_chunk",
+    text_col="long_passage",
+    industry_col="Industry",
     year_col="fyear",
-    source_id_col="document_id",
+    source_id_cols=["gvkey", "fyear"],
+    metadata_cols=["gvkey", "fyear"],
 )
 ```
 
-For `sentence`, industry and year remain in the output but are not fed to the model unless `context_mode="industry_year"` is requested.
+`source_id_cols` constructs a unique source identifier such as `001234_2023`. Requested `metadata_cols` are copied to every extracted unit. Duplicate or missing source identifiers raise an error because they would make `unit_id` ambiguous.
 
-## Thresholds and decision rules
+The package returns one row per extracted or supplied unit. It does not aggregate predictions to a firm-year measure; users retain control over any subsequent counting, weighting, dummy creation, or aggregation.
 
-Published defaults, in model-output order:
-
-```python
-{
-    "inno_product": 0.65,
-    "inno_process": 0.45,
-    "inno_organizational": 0.55,
-    "inno_marketing": 0.55,
-    "inno_businessmodel": 0.45,
-    "inno_sustainability": 0.50,
-    "inno_AI": 0.50,
-    "inno_uncategorized": 0.25,
-}
-```
-
-Override only what is needed; canonical names and short aliases are accepted:
-
-```python
-results = classifier.predict(
-    text,
-    unit="sentence",
-    thresholds={"product": 0.70, "AI": 0.40},
-)
-```
-
-- `gatekeeper`: if uncategorized crosses its threshold, return only uncategorized; otherwise retain every innovation label crossing its own threshold.
-- `fallback`: ignore the uncategorized probability for label assignment and return uncategorized only when no innovation category crosses.
-
-Set `uncategorized_rule="gatekeeper"` or `"fallback"` to override the mode default.
+For very large collections of complete filings, submit manageable DataFrame chunks and save each result before continuing. This prevents all extracted units from thousands of filings being held in memory simultaneously.
 
 ## Output
 
-By default, `predict()` returns a compact DataFrame with five columns:
+The default compact output contains:
 
-- `unit_id`, which preserves the source and within-source unit;
-- `processed_text`;
-- `predicted_labels`;
-- `dominant_label`;
-- `dominant_probability`.
+- `unit_id`
+- `processed_text`
+- `predicted_labels`: every granular category passing its threshold
+- `granular_category`: the highest-probability assigned granular category
+- `main_category`: the main category corresponding to `granular_category`
+- `category_probability`: the probability of `granular_category`
 
-`dominant_label` is the highest-probability label among `predicted_labels`, so it never contradicts the gatekeeper or fallback assignment.
-
-Request the complete auditable output when you need source lineage, context, diagnostics, or threshold analysis:
+Request the complete auditable output to inspect model probabilities and processing details:
 
 ```python
-full_results = classifier.predict(
+full_results = classifier.predict(text, unit="sentence", output="full")
+```
+
+Full output adds source lineage, industry and year, `main_categories`, all eight `prob_*` columns, token and window counts, long-input actions, and the device used. `main_categories` contains every main category implied by the assigned granular labels.
+
+## Thresholds
+
+The default thresholds are:
+
+```python
+{
+    "product": 0.65,
+    "process": 0.45,
+    "organizational": 0.55,
+    "marketing": 0.55,
+    "business_model": 0.45,
+    "sustainability": 0.50,
+    "AI": 0.50,
+    "uncategorized": 0.25,
+}
+```
+
+Override only the categories needed for a particular application:
+
+```python
+adjusted = classifier.predict(
     text,
     unit="sentence",
+    thresholds={"product": 0.70, "AI": 0.40},
     output="full",
 )
 ```
 
-The full DataFrame adds `source_index`, `source_id`, `unit_index`, `unit_type`, `source_text`, `industry`, `year`, `token_count`, `window_count`, `truncated_or_windowed`, `device_used`, and all eight `prob_*` columns. Use these probability columns to inspect classifications and select thresholds appropriate for the application.
+Users should inspect the full probability output and validate alternative thresholds for their own corpus and research setting.
 
-Set `include_model_input=True` to include the exact string sent to the tokenizer; it is retained in either compact or full output. Results can be saved normally:
+## Long documents
+
+A long source document is not passed to BERT as one input when `unit="noun_chunk"`, `"sentence"`, or `"paragraph"`:
+
+- noun-chunk mode parses the source, extracts short terms, and classifies the terms in batches;
+- sentence mode classifies each detected sentence;
+- paragraph mode classifies each blank-line-delimited paragraph and divides long paragraphs into overlapping token windows.
+
+Do not pass an entire filing with `unit="term"`. Long term, noun-chunk, and sentence units raise an error by default rather than being silently truncated. Users must explicitly select `long_text_strategy="truncate"` or `"window"` when that behavior is intended.
+
+Paragraph windows use category-wise maximum probabilities. These values indicate whether relevant evidence appears anywhere in the paragraph; they are not calibrated probabilities for the paragraph as a whole. If a long source has no blank-line paragraph boundaries, the package warns that it may be treated as one giant paragraph.
+
+For 10-K research, extracting the intended filing section before classification is recommended. Processing an entire filing introduces risk factors, MD&A, notes, controls, and other content that may change the measured construct. If complete filings are required, retain section identifiers and process each section as a separate source.
+
+Use `output="full"` to inspect `token_count`, `window_count`, `long_text_action`, and all category probabilities.
+
+## Progress and run diagnostics
+
+`progress="auto"` is the default. It displays adaptive progress bars in interactive notebooks and terminals and remains silent in non-interactive jobs.
+
+```python
+results = classifier.predict(text, unit="noun_chunk", industry="Services", year=2024)
+classifier.last_run_summary
+```
+
+Use `progress=True` to force progress or `progress=False` for clean logs and saved notebook outputs. Progress is written separately from returned results.
+
+## Saving output
 
 ```python
 results.to_csv("innobert_results.csv", index=False)
 results.to_parquet("innobert_results.parquet", index=False)
 ```
 
-## Long inputs
+CSV stores list-valued columns as text. Parquet preserves list-like values more naturally.
 
-`long_text_strategy` can be:
+## Scripts and non-notebook use
 
-- `"truncate"`: match the notebook behavior and record whether truncation occurred;
-- `"window"`: use overlapping token windows and take the maximum probability for each category across windows;
-- `"error"`: stop and report the affected rows.
+The same interface works in a `.py` script:
 
-The category-wise maximum makes paragraph output an “innovation evidence anywhere in the paragraph” score. It is not a calibrated probability for the paragraph as a whole.
+```python
+from innobert import InnoBERT
 
-Use `output="full"` to inspect `window_count`, `truncated_or_windowed`, and the window-aggregated category probabilities.
+classifier = InnoBERT.from_pretrained("mustafahci/InnoBERT", device="auto")
+results = classifier.predict(
+    ["automated production system"],
+    industry="Manufacturing",
+    year=2024,
+    unit="term",
+    progress=False,
+)
+results.to_csv("innobert_results.csv", index=False)
+```
+
+Run it from the activated environment with `python your_script.py`.
 
 ## Common errors
 
-- **Industry/year missing:** required for the default `term` and `noun_chunk` profile. Supply both, or explicitly use `context_mode="none"`.
-- **List length mismatch:** provide one industry/year per source text, or use a scalar to broadcast.
-- **CUDA unavailable:** use `device="auto"` or `device="cpu"`, or install a CUDA-compatible PyTorch build.
-- **spaCy model missing:** install the noun-chunk extra, then run `python -m spacy download en_core_web_lg`.
-- **No units produced:** reduce `min_sentence_words` or inspect whether noun-chunk filters remove all candidates.
-- **Input too long:** select `long_text_strategy="window"` or increase `max_length` up to 512.
+- **Wrong environment:** compare `python -c "import sys; print(sys.executable)"` with the notebook kernel.
+- **pip resolves to a user folder:** use `python -m pip`; in Conda, set `conda env config vars set PYTHONNOUSERSITE=1` and reactivate the environment if needed.
+- **Hugging Face authorization fails:** authenticate with `notebook_login()` or `hf auth login`.
+- **CUDA unavailable:** use `device="auto"` or `device="cpu"`, or install a compatible CUDA-enabled PyTorch build.
+- **spaCy model missing:** run `python -m spacy download en_core_web_lg` in the active environment.
+- **List length mismatch:** provide one industry/year per source text or use a scalar.
+- **Input too long:** choose the appropriate unit; only explicitly request truncation or token windows when scientifically justified.
 
-See [`examples/InnoBERT_manual.ipynb`](examples/InnoBERT_manual.ipynb) for a runnable walkthrough.
+See [`examples/InnoBERT_manual.ipynb`](examples/InnoBERT_manual.ipynb) for a guided walkthrough.
 
 ## Scientific scope
 
-The trained model uses the exact input template:
+The trained model uses:
 
 ```text
 Industry: {industry}. Year: {year}. The term is: <TERM> {term} </TERM>.
 ```
 
-Accordingly, contextual term and noun-chunk classification are the validated/default use. Sentence and paragraph modes reproduce or extend the conference-call application but should not be described as independently validated without further evaluation. The package performs inference only: it does not reconstruct historical novelty, compare prior years, build NEW or STOCK measures, or redistribute training data.
+Contextual term and noun-chunk classification are therefore the validated/default use. The package performs inference only. It does not reconstruct economy-wide novelty, compare prior years, build NEW or STOCK measures, redistribute training data, or automatically create firm-year measures.
 
-## Licensing and citation
+## Citation
 
-Copyright 2026 Mustafa Ahci. The package code and fine-tuned InnoBERT weights are released under the Apache License 2.0; see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE). The base checkpoint is `yiyanghkust/finbert-pretrain` from the Apache-2.0-licensed FinBERT project. Its Hugging Face repository does not independently declare license metadata, so the upstream provenance and this qualification are retained in the model card and notice.
+Ahci, Mustafa and Joos, Philip, **Beyond Invention: The Composition and Economic Relevance of Innovation-Related Capabilities** (Updated September 1, 2026). Available at SSRN: [https://ssrn.com/abstract=4797745](https://ssrn.com/abstract=4797745) or [http://dx.doi.org/10.2139/ssrn.4797745](http://dx.doi.org/10.2139/ssrn.4797745).
 
-Please cite the software metadata in [`CITATION.cff`](CITATION.cff), together with the associated paper once its final citation is available, and cite the upstream FinBERT paper:
+Please also cite the upstream FinBERT paper:
 
-> Huang, A. H., Wang, H., and Yang, Y. (2023). FinBERT: A Large Language Model for Extracting Information from Financial Text. *Contemporary Accounting Research*, 40(2), 806–841.
+Huang, A. H., Wang, H., and Yang, Y. (2023). FinBERT: A Large Language Model for Extracting Information from Financial Text. *Contemporary Accounting Research*, 40(2), 806–841.
+
+## License
+
+Copyright 2026 Mustafa Ahci. The package code and fine-tuned InnoBERT weights are provided under the Apache License 2.0; see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE). The model was independently fine-tuned from `yiyanghkust/finbert-pretrain`; upstream provenance and licensing qualifications are documented in [`MODEL_CARD.md`](MODEL_CARD.md).

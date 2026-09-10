@@ -1,9 +1,16 @@
 """Stable inference interface for the eight-label InnoBERT classifier."""
 
 from pathlib import Path
+from math import ceil
+import re
+from time import perf_counter
+import warnings
 
 from .constants import (
     LABELS,
+    DISPLAY_LABELS,
+    MAIN_CATEGORIES,
+    MAIN_CATEGORY_ORDER,
     SUPPORTED_CONTEXT_MODES,
     SUPPORTED_UNCATEGORIZED_RULES,
     SUPPORTED_UNITS,
@@ -11,14 +18,16 @@ from .constants import (
 )
 from .inputs import normalize_documents
 from .preprocessing import expand_documents
+from .progress import progress_iter, resolve_progress
 
 
 SUMMARY_COLUMNS = (
     "unit_id",
     "processed_text",
     "predicted_labels",
-    "dominant_label",
-    "dominant_probability",
+    "granular_category",
+    "main_category",
+    "category_probability",
 )
 
 
@@ -30,6 +39,7 @@ class InnoBERT:
         self.model = model
         self.device = device
         self.spacy_model = spacy_model
+        self.last_run_summary = {}
 
     @classmethod
     def from_pretrained(
@@ -107,8 +117,11 @@ class InnoBERT:
         year_col="year",
         filer_name_col=None,
         source_id_col=None,
+        source_id_cols=None,
+        metadata_cols=None,
         output="summary",
         include_model_input=False,
+        progress="auto",
     ):
         """Classify one text, aligned lists, or rows of a pandas DataFrame.
 
@@ -119,12 +132,14 @@ class InnoBERT:
         _validate_choice("context_mode", context_mode, SUPPORTED_CONTEXT_MODES)
         _validate_choice("uncategorized_rule", uncategorized_rule, SUPPORTED_UNCATEGORIZED_RULES)
         _validate_choice("output", output, ("summary", "full"))
+        resolve_progress(progress)
+        summary_metadata_cols = [metadata_cols] if isinstance(metadata_cols, str) else list(metadata_cols or [])
         if context_mode == "auto":
             context_mode = "industry_year" if unit in {"term", "noun_chunk"} else "none"
         if uncategorized_rule == "auto":
             uncategorized_rule = "gatekeeper" if unit in {"term", "noun_chunk"} else "fallback"
         if long_text_strategy == "auto":
-            long_text_strategy = "window" if unit == "paragraph" else "truncate"
+            long_text_strategy = "window" if unit == "paragraph" else "error"
         _validate_choice("long_text_strategy", long_text_strategy, ("truncate", "window", "error"))
         if not isinstance(stride, int) or stride < 0:
             raise ValueError("stride must be a nonnegative integer.")
@@ -139,13 +154,19 @@ class InnoBERT:
             year_col=year_col,
             filer_name_col=filer_name_col,
             source_id_col=source_id_col,
+            source_id_cols=source_id_cols,
+            metadata_cols=metadata_cols,
             require_context=context_mode == "industry_year",
         )
+        if unit == "paragraph":
+            _warn_if_paragraph_boundaries_missing(documents)
+        started = perf_counter()
         units = expand_documents(
             documents,
             unit,
             min_sentence_words=min_sentence_words,
             spacy_model=self.spacy_model,
+            progress=progress,
         )
         if not units:
             raise ValueError(
@@ -168,12 +189,13 @@ class InnoBERT:
         if not isinstance(batch_size, int) or batch_size < 1:
             raise ValueError("batch_size must be a positive integer.")
 
-        probabilities, token_counts, window_counts = self._probabilities(
+        probabilities, token_counts, window_counts, model_batches = self._probabilities(
             model_inputs,
             batch_size=batch_size,
             max_length=max_length,
             strategy=long_text_strategy,
             stride=stride,
+            progress=progress,
         )
         threshold_map = resolve_thresholds(thresholds)
         rows = []
@@ -182,7 +204,11 @@ class InnoBERT:
         ):
             predicted = assign_labels(probs, threshold_map, uncategorized_rule)
             dominant_label, dominant_probability = _select_dominant_assignment(probs, predicted)
+            predicted_display, granular_category, main_categories, main_category = _summarize_assignments(
+                predicted, dominant_label
+            )
             row = {
+                **dict(record.metadata),
                 "source_index": record.source_index,
                 "source_id": record.source_id,
                 "unit_id": f"{record.source_id}:{record.unit_index}",
@@ -195,10 +221,17 @@ class InnoBERT:
                 "token_count": token_count,
                 "window_count": window_count,
                 "truncated_or_windowed": token_count > max_length,
+                "long_text_action": (
+                    "windowed" if window_count > 1 else
+                    "truncated" if long_text_strategy == "truncate" and token_count > max_length else
+                    "none"
+                ),
                 **{f"prob_{label}": float(prob) for label, prob in zip(LABELS, probs)},
-                "predicted_labels": predicted,
-                "dominant_label": dominant_label,
-                "dominant_probability": dominant_probability,
+                "predicted_labels": predicted_display,
+                "granular_category": granular_category,
+                "main_categories": main_categories,
+                "main_category": main_category,
+                "category_probability": dominant_probability,
                 "device_used": str(self.device),
             }
             if include_model_input:
@@ -206,14 +239,26 @@ class InnoBERT:
             rows.append(row)
         import pandas as pd
         result = pd.DataFrame(rows)
+        self.last_run_summary = {
+            "source_documents": len(documents),
+            "extracted_units": len(units),
+            "classified_units": len(units),
+            "model_batches": model_batches,
+            "windowed_units": sum(count > 1 for count in window_counts),
+            "truncated_units": sum(
+                count > max_length for count in token_counts
+            ) if long_text_strategy == "truncate" else 0,
+            "device": str(self.device),
+            "elapsed_seconds": round(perf_counter() - started, 3),
+        }
         if output == "summary":
-            columns = list(SUMMARY_COLUMNS)
+            columns = list(dict.fromkeys([*summary_metadata_cols, *SUMMARY_COLUMNS]))
             if include_model_input:
                 columns.append("model_input")
             return result[columns]
         return result
 
-    def _probabilities(self, texts, *, batch_size, max_length, strategy, stride):
+    def _probabilities(self, texts, *, batch_size, max_length, strategy, stride, progress="auto"):
         import numpy as np
         import torch
 
@@ -229,7 +274,12 @@ class InnoBERT:
 
         if strategy == "truncate":
             all_probs = []
-            for start in range(0, len(texts), batch_size):
+            starts = range(0, len(texts), batch_size)
+            iterator = progress_iter(
+                starts, total=ceil(len(texts) / batch_size),
+                description="Classifying units", progress=progress,
+            )
+            for start in iterator:
                 encoded = self.tokenizer(
                     texts[start:start + batch_size], padding=True, truncation=True,
                     max_length=max_length, return_tensors="pt",
@@ -237,7 +287,7 @@ class InnoBERT:
                 encoded = {key: value.to(self.device) for key, value in encoded.items()}
                 with torch.inference_mode():
                     all_probs.append(torch.sigmoid(self.model(**encoded).logits).cpu().numpy())
-            return np.vstack(all_probs), token_counts, [1] * len(texts)
+            return np.vstack(all_probs), token_counts, [1] * len(texts), ceil(len(texts) / batch_size)
 
         chunks, owners = [], []
         for owner, text in enumerate(texts):
@@ -253,7 +303,12 @@ class InnoBERT:
                 chunks.append(chunk)
                 owners.append(owner)
         aggregate = np.full((len(texts), len(LABELS)), -np.inf, dtype=float)
-        for start in range(0, len(chunks), batch_size):
+        starts = range(0, len(chunks), batch_size)
+        iterator = progress_iter(
+            starts, total=ceil(len(chunks) / batch_size),
+            description="Classifying windows", progress=progress,
+        )
+        for start in iterator:
             batch_chunks = chunks[start:start + batch_size]
             encoded = self.tokenizer.pad(batch_chunks, padding=True, return_tensors="pt")
             encoded = {key: value.to(self.device) for key, value in encoded.items()}
@@ -262,7 +317,7 @@ class InnoBERT:
             for owner, row in zip(owners[start:start + batch_size], probs):
                 aggregate[owner] = np.maximum(aggregate[owner], row)
         window_counts = np.bincount(owners, minlength=len(texts)).tolist()
-        return aggregate, token_counts, window_counts
+        return aggregate, token_counts, window_counts, ceil(len(chunks) / batch_size)
 
 
 def assign_labels(probabilities, thresholds, rule):
@@ -295,8 +350,36 @@ def _select_dominant_assignment(probabilities, predicted_labels):
     return LABELS[dominant_index], float(probabilities[dominant_index])
 
 
+def _summarize_assignments(predicted_labels, dominant_label):
+    predicted_display = [DISPLAY_LABELS[label] for label in predicted_labels]
+    assigned_main = {MAIN_CATEGORIES[label] for label in predicted_labels}
+    main_categories = [category for category in MAIN_CATEGORY_ORDER if category in assigned_main]
+    return (
+        predicted_display,
+        DISPLAY_LABELS[dominant_label],
+        main_categories,
+        MAIN_CATEGORIES[dominant_label],
+    )
+
+
 def _format_training_input(text, industry, year):
     return f"Industry: {industry}. Year: {year}. The term is: <TERM> {text} </TERM>."
+
+
+def _warn_if_paragraph_boundaries_missing(documents):
+    affected = [
+        document.source_id for document in documents
+        if len(document.text) > 20_000 and not re.search(r"\n\s*\n", document.text)
+    ]
+    if affected:
+        warnings.warn(
+            "Long source text appears to contain no blank-line paragraph boundaries for source_id(s) "
+            f"{affected[:10]}. Paragraph mode will treat each source as one paragraph and aggregate "
+            "category-wise maxima across many windows. Preserve paragraph or section boundaries, or "
+            "use sentence/noun_chunk mode.",
+            UserWarning,
+            stacklevel=2,
+        )
 
 
 def _resolve_device(requested, torch):

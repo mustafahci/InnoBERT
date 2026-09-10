@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 from numbers import Integral
+from types import MappingProxyType
+from collections import Counter
 
 
 @dataclass(frozen=True)
@@ -12,6 +14,7 @@ class Document:
     industry: str | None
     year: int | None
     filer_name: str | None
+    metadata: object
 
 
 def normalize_documents(
@@ -25,16 +28,26 @@ def normalize_documents(
     year_col="year",
     filer_name_col=None,
     source_id_col=None,
+    source_id_cols=None,
+    metadata_cols=None,
     require_context=False,
 ):
     """Normalize a string, sequence, or pandas DataFrame into aligned documents."""
     if _is_dataframe(data):
         columns = set(data.columns)
+        if source_id_col is not None and source_id_cols is not None:
+            raise ValueError("Use either source_id_col or source_id_cols, not both.")
+        source_id_cols = _normalize_column_names(source_id_cols, "source_id_cols")
+        metadata_cols = _normalize_column_names(metadata_cols, "metadata_cols")
         required = [text_col]
         if require_context and industry is None:
             required.append(industry_col)
         if require_context and year is None:
             required.append(year_col)
+        required.extend(source_id_cols)
+        required.extend(metadata_cols)
+        if source_id_col:
+            required.append(source_id_col)
         missing = [name for name in required if name not in columns]
         if missing:
             raise ValueError(f"Input DataFrame is missing required column(s): {missing}.")
@@ -42,11 +55,24 @@ def normalize_documents(
         industries = industry if industry is not None else _column_or_none(data, industry_col)
         years = year if year is not None else _column_or_none(data, year_col)
         filer_names = filer_name if filer_name is not None else _column_or_none(data, filer_name_col)
-        source_ids = data[source_id_col].tolist() if source_id_col else list(data.index)
+        if source_id_col:
+            source_ids = data[source_id_col].tolist()
+        elif source_id_cols:
+            source_ids = [
+                "_".join(_format_source_id_part(value, row) for value in values)
+                for row, values in enumerate(data[source_id_cols].itertuples(index=False, name=None))
+            ]
+        else:
+            source_ids = list(data.index)
+        metadata = [
+            MappingProxyType({name: data.iloc[row][name] for name in metadata_cols})
+            for row in range(len(data))
+        ]
     else:
         texts = [data] if isinstance(data, str) else _as_list(data, "texts")
         industries, years, filer_names = industry, year, filer_name
         source_ids = list(range(len(texts)))
+        metadata = [MappingProxyType({}) for _ in texts]
 
     if not texts:
         raise ValueError("At least one text is required.")
@@ -56,6 +82,7 @@ def normalize_documents(
     years = _broadcast(years, n, "year")
     filer_names = _broadcast(filer_names, n, "filer_name")
     source_ids = _broadcast(source_ids, n, "source_id", allow_scalar=False)
+    _validate_source_ids(source_ids)
 
     if require_context:
         missing_industry = [i for i, value in enumerate(industries) if value is None or not str(value).strip()]
@@ -75,9 +102,45 @@ def normalize_documents(
             industry=None if industries[i] is None else str(industries[i]).strip(),
             year=normalized_years[i],
             filer_name=None if filer_names[i] is None else str(filer_names[i]).strip(),
+            metadata=metadata[i],
         )
         for i, text in enumerate(texts)
     ]
+
+
+def _normalize_column_names(value, name):
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    try:
+        values = list(value)
+    except TypeError as exc:
+        raise TypeError(f"{name} must be a column name, a sequence of column names, or None.") from exc
+    if not values or any(not isinstance(item, str) or not item for item in values):
+        raise ValueError(f"{name} must contain one or more non-empty column names.")
+    if len(set(values)) != len(values):
+        raise ValueError(f"{name} contains duplicate column names.")
+    return values
+
+
+def _format_source_id_part(value, row):
+    if value is None or (isinstance(value, float) and value != value):
+        raise ValueError(f"source_id_cols contains a missing value at row {row}.")
+    return str(value)
+
+
+def _validate_source_ids(values):
+    missing = [i for i, value in enumerate(values) if value is None or not str(value).strip()]
+    if missing:
+        raise ValueError(f"source_id contains missing or empty value(s) at row(s) {missing[:10]}.")
+    normalized = [str(value) for value in values]
+    duplicates = sorted(value for value, count in Counter(normalized).items() if count > 1)
+    if duplicates:
+        raise ValueError(
+            "source identifiers must be unique so unit_id remains unique; "
+            f"duplicate value(s): {duplicates[:10]}."
+        )
 
 
 def _is_dataframe(value):

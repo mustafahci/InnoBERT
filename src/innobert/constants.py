@@ -11,6 +11,34 @@ LABELS = (
     "inno_uncategorized",
 )
 
+DISPLAY_LABELS = {
+    "inno_product": "product",
+    "inno_process": "process",
+    "inno_organizational": "organizational",
+    "inno_marketing": "marketing",
+    "inno_businessmodel": "business_model",
+    "inno_sustainability": "sustainability",
+    "inno_AI": "AI",
+    "inno_uncategorized": "uncategorized",
+}
+
+MAIN_CATEGORIES = {
+    "inno_product": "product",
+    "inno_process": "business_process",
+    "inno_organizational": "business_process",
+    "inno_marketing": "business_process",
+    "inno_businessmodel": "business_process",
+    "inno_sustainability": "sustainability",
+    "inno_AI": "AI",
+    "inno_uncategorized": "uncategorized",
+}
+
+MAIN_CATEGORY_ORDER = ("product", "business_process", "sustainability", "AI", "uncategorized")
+CATEGORY_HIERARCHY = {
+    DISPLAY_LABELS[label]: MAIN_CATEGORIES[label]
+    for label in LABELS
+}
+
 DEFAULT_THRESHOLDS = dict(zip(LABELS, (0.65, 0.45, 0.55, 0.55, 0.45, 0.50, 0.50, 0.25)))
 
 LABEL_ALIASES = {

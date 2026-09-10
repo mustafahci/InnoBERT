@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from importlib.resources import files
 
 from .inputs import Document
+from .progress import progress_iter
 
 
 RANKING_ADJECTIVES = {
@@ -75,6 +76,7 @@ class UnitRecord:
     processed_text: str
     industry: str | None
     year: int | None
+    metadata: object
 
 
 def clean_text(text):
@@ -98,6 +100,11 @@ def split_paragraphs(text):
 def extract_noun_chunks(text, filer_name=None, spacy_model="en_core_web_lg"):
     """Extract terms using the final 2026 noun-chunk algorithm."""
     nlp = _get_nlp(spacy_model)
+    if len(text) > nlp.max_length:
+        raise ValueError(
+            f"Noun-chunk source text contains {len(text):,} characters, exceeding the configured "
+            f"spaCy limit of {nlp.max_length:,}. Split the filing into sections or smaller documents."
+        )
     stoplist = _modifying_adjectives()
     filer_tokens = set(re.findall(r"[A-Za-z0-9-]+", (filer_name or "").lower()))
     self_references = CORPORATE_SELF_REFERENCES | filer_tokens
@@ -174,9 +181,14 @@ def extract_noun_chunks(text, filer_name=None, spacy_model="en_core_web_lg"):
     return sorted(set(filtered).union(standalone))
 
 
-def expand_documents(documents, unit, *, min_sentence_words=1, spacy_model="en_core_web_lg"):
+def expand_documents(
+    documents, unit, *, min_sentence_words=1, spacy_model="en_core_web_lg", progress="auto"
+):
     records = []
-    for document in documents:
+    iterator = progress_iter(
+        documents, total=len(documents), description="Extracting text units", progress=progress
+    )
+    for document in iterator:
         if unit == "term":
             pieces = [document.text]
         elif unit == "sentence":
@@ -197,6 +209,7 @@ def expand_documents(documents, unit, *, min_sentence_words=1, spacy_model="en_c
                 processed_text=piece,
                 industry=document.industry,
                 year=document.year,
+                metadata=document.metadata,
             ))
     return records
 
