@@ -170,7 +170,7 @@ class InnoBERT:
             units, model_inputs, probabilities, token_counts, window_counts
         ):
             predicted = assign_labels(probs, threshold_map, uncategorized_rule)
-            dominant_index = max(range(len(LABELS)), key=lambda i: probs[i])
+            dominant_label, dominant_probability = _select_dominant_assignment(probs, predicted)
             row = {
                 "source_index": record.source_index,
                 "source_id": record.source_id,
@@ -186,8 +186,8 @@ class InnoBERT:
                 "truncated_or_windowed": token_count > max_length,
                 **{f"prob_{label}": float(prob) for label, prob in zip(LABELS, probs)},
                 "predicted_labels": predicted,
-                "dominant_label": LABELS[dominant_index],
-                "dominant_probability": float(probs[dominant_index]),
+                "dominant_label": dominant_label,
+                "dominant_probability": dominant_probability,
                 "device_used": str(self.device),
             }
             if include_model_input:
@@ -262,6 +262,20 @@ def assign_labels(probabilities, thresholds, rule):
         if probability >= thresholds[label]
     ]
     return selected or [uncat]
+
+
+def _select_dominant_assignment(probabilities, predicted_labels):
+    """Return the highest-probability label among the labels actually assigned."""
+    if len(probabilities) != len(LABELS):
+        raise ValueError(f"Expected 8 probabilities; received {len(probabilities)}.")
+    if not predicted_labels:
+        raise ValueError("predicted_labels must contain at least one assigned label.")
+    try:
+        assigned_indices = [LABELS.index(label) for label in predicted_labels]
+    except ValueError as exc:
+        raise ValueError("predicted_labels contains an unknown InnoBERT label.") from exc
+    dominant_index = max(assigned_indices, key=lambda i: probabilities[i])
+    return LABELS[dominant_index], float(probabilities[dominant_index])
 
 
 def _format_training_input(text, industry, year):

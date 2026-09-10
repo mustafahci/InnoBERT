@@ -1,6 +1,6 @@
 import unittest
 
-from innobert.classifier import assign_labels
+from innobert.classifier import _select_dominant_assignment, assign_labels
 from innobert.constants import DEFAULT_THRESHOLDS, LABELS, resolve_thresholds
 from innobert.inputs import normalize_documents
 from innobert.preprocessing import split_paragraphs, split_sentences
@@ -26,6 +26,14 @@ class DecisionRuleTests(unittest.TestCase):
     def test_gatekeeper_overrides_innovation_labels(self):
         probs = [0.9, 0.8, 0, 0, 0, 0, 0, 0.3]
         self.assertEqual(assign_labels(probs, DEFAULT_THRESHOLDS, "gatekeeper"), ["inno_uncategorized"])
+
+    def test_dominant_label_respects_gatekeeper_assignment(self):
+        probs = [0.1, 0.7, 0, 0, 0, 0, 0, 0.3]
+        predicted = assign_labels(probs, DEFAULT_THRESHOLDS, "gatekeeper")
+        label, probability = _select_dominant_assignment(probs, predicted)
+        self.assertEqual(predicted, ["inno_uncategorized"])
+        self.assertEqual(label, "inno_uncategorized")
+        self.assertEqual(probability, 0.3)
 
     def test_fallback_keeps_multiple_innovation_labels(self):
         probs = [0.9, 0.8, 0, 0, 0, 0, 0, 0.9]

@@ -211,8 +211,8 @@ def _get_nlp(model):
         from spacy.util import compile_infix_regex
     except ImportError as exc:
         raise ImportError(
-            "Noun-chunk mode requires optional dependencies. Install with "
-            "`pip install 'innobert[noun-chunks]'`, then install the requested spaCy model."
+            "Noun-chunk mode requires optional dependencies. Install InnoBERT with its "
+            "`noun-chunks` extra, then install the requested spaCy model."
         ) from exc
     try:
         nlp = spacy.load(model)

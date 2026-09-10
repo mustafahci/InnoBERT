@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "innobert"
-version = "0.1.0"
+version = "0.1.1"
 description = "Classify innovation-related business text with a fine-tuned FinBERT model."
 readme = "README.md"
 requires-python = ">=3.10"

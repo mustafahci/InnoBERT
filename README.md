@@ -35,6 +35,7 @@ from innobert import InnoBERT
 classifier = InnoBERT.from_pretrained(
     "mustafahci/InnoBERT",
     device="auto",  # auto, cpu, cuda, cuda:0, or mps
+    spacy_model="en_core_web_lg",  # used only by noun_chunk mode
 )
 ```
 
@@ -181,6 +182,8 @@ The returned DataFrame preserves source-to-unit lineage and includes:
 - `token_count`, `window_count`, and `truncated_or_windowed`;
 - one probability column for every label;
 - `predicted_labels`, `dominant_label`, and `dominant_probability`;
+
+`dominant_label` is the highest-probability label among `predicted_labels`, so it never contradicts the gatekeeper or fallback assignment. The complete raw scores remain available in the eight `prob_*` columns.
 - `device_used`.
 
 Set `include_model_input=True` to audit the exact string sent to the tokenizer. Results can be saved normally:
