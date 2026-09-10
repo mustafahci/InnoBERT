@@ -13,6 +13,8 @@ The eight granular categories are product, process, organizational, marketing, b
 
 Uncategorized is retained as a fallback rather than treated as an innovation category.
 
+The innovation-type framework is informed by the Oslo Manual 2018. InnoBERT extends the reporting taxonomy with sustainability, AI, and an uncategorized outcome for the purposes of textual classification.
+
 ## Installation
 
 Python 3.10–3.12 is supported. Python 3.11 is recommended.
@@ -183,10 +185,11 @@ The default compact output contains:
 
 - `unit_id`
 - `processed_text`
-- `predicted_labels`: every granular category passing its threshold
-- `granular_category`: the highest-probability assigned granular category
-- `main_category`: the main category corresponding to `granular_category`
-- `category_probability`: the probability of `granular_category`
+- `predicted_subcategory_labels`: every granular category passing its threshold
+- `predicted_subcategory_probabilities`: probabilities in the same order as the subcategory labels
+- `main_categories`: all corresponding main categories, deduplicated
+- `highest_probability_label`: the assigned subcategory with the highest raw probability
+- `highest_probability`: that subcategory's raw probability
 
 Request the complete auditable output to inspect model probabilities and processing details:
 
@@ -194,7 +197,9 @@ Request the complete auditable output to inspect model probabilities and process
 full_results = classifier.predict(text, unit="sentence", output="full")
 ```
 
-Full output adds source lineage, industry and year, `main_categories`, all eight `prob_*` columns, token and window counts, long-input actions, and the device used. `main_categories` contains every main category implied by the assigned granular labels.
+Full output adds source lineage, industry and year, all eight `prob_*` columns, token and window counts, long-input actions, and the device used.
+
+InnoBERT is a multi-label classifier. Its eight sigmoid probabilities are estimated independently and do not sum to one. `highest_probability_label` is provided only as a transparent convenience: it is the maximum raw probability among the assigned subcategories and should not be interpreted as a threshold-adjusted or conceptually dominant category.
 
 ## Thresholds
 
@@ -311,6 +316,10 @@ Ahci, Mustafa and Joos, Philip, **Beyond Invention: The Composition and Economic
 Please also cite the upstream FinBERT paper:
 
 Huang, A. H., Wang, H., and Yang, Y. (2023). FinBERT: A Large Language Model for Extracting Information from Financial Text. *Contemporary Accounting Research*, 40(2), 806–841.
+
+Taxonomy reference:
+
+OECD/Eurostat (2018), *Oslo Manual 2018: Guidelines for Collecting, Reporting and Using Data on Innovation*, 4th Edition, The Measurement of Scientific, Technological and Innovation Activities, OECD Publishing, Paris/Eurostat, Luxembourg, [https://doi.org/10.1787/9789264304604-en](https://doi.org/10.1787/9789264304604-en).
 
 ## License
 

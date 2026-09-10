@@ -31,6 +31,8 @@ The supplied checkpoint is a `BertForSequenceClassification` model with 12 layer
 
 The Python package reports reader-facing granular labels without the internal `inno_` prefix and maps process, organizational, marketing, and business-model predictions to the main category `business_process`. This reporting hierarchy does not alter the model outputs or thresholds.
 
+The innovation-type framework is informed by the Oslo Manual 2018. Sustainability, AI, and the uncategorized outcome are additional reporting categories used by InnoBERT rather than being presented as separate official Oslo Manual innovation types.
+
 ## Intended use
 
 The primary use is multi-label classification of innovation-related terms extracted from business disclosures. The validated training input includes an industry, year, and marked term. The package also supports sentence and paragraph processing as documented extensions.
@@ -56,6 +58,8 @@ Default thresholds are 0.65, 0.45, 0.55, 0.55, 0.45, 0.50, 0.50, and 0.25 in the
 ## Citation
 
 Ahci, Mustafa and Joos, Philip, **Beyond Invention: The Composition and Economic Relevance of Innovation-Related Capabilities** (Updated September 1, 2026). Available at SSRN: https://ssrn.com/abstract=4797745 or http://dx.doi.org/10.2139/ssrn.4797745.
+
+OECD/Eurostat (2018), *Oslo Manual 2018: Guidelines for Collecting, Reporting and Using Data on Innovation*, 4th Edition, The Measurement of Scientific, Technological and Innovation Activities, OECD Publishing, Paris/Eurostat, Luxembourg. https://doi.org/10.1787/9789264304604-en.
 
 ## Upstream attribution
 

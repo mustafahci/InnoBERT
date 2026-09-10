@@ -8,7 +8,7 @@ import numpy as np
 from innobert.classifier import (
     InnoBERT,
     SUMMARY_COLUMNS,
-    _select_dominant_assignment,
+    _select_highest_probability_assignment,
     _summarize_assignments,
     assign_labels,
 )
@@ -38,10 +38,10 @@ class DecisionRuleTests(unittest.TestCase):
         probs = [0.9, 0.8, 0, 0, 0, 0, 0, 0.3]
         self.assertEqual(assign_labels(probs, DEFAULT_THRESHOLDS, "gatekeeper"), ["inno_uncategorized"])
 
-    def test_dominant_label_respects_gatekeeper_assignment(self):
+    def test_highest_probability_label_respects_gatekeeper_assignment(self):
         probs = [0.1, 0.7, 0, 0, 0, 0, 0, 0.3]
         predicted = assign_labels(probs, DEFAULT_THRESHOLDS, "gatekeeper")
-        label, probability = _select_dominant_assignment(probs, predicted)
+        label, probability = _select_highest_probability_assignment(probs, predicted)
         self.assertEqual(predicted, ["inno_uncategorized"])
         self.assertEqual(label, "inno_uncategorized")
         self.assertEqual(probability, 0.3)
@@ -64,21 +64,24 @@ class OutputTests(unittest.TestCase):
             (
                 "unit_id",
                 "processed_text",
-                "predicted_labels",
-                "granular_category",
-                "main_category",
-                "category_probability",
+                "predicted_subcategory_labels",
+                "predicted_subcategory_probabilities",
+                "main_categories",
+                "highest_probability_label",
+                "highest_probability",
             ),
         )
 
     def test_granular_and_main_categories_are_distinct(self):
+        probabilities = [0.90, 0.10, 0.10, 0.10, 0.95, 0.10, 0.10, 0.10]
         summary = _summarize_assignments(
-            ["inno_product", "inno_businessmodel"], "inno_product"
+            probabilities, ["inno_product", "inno_businessmodel"]
         )
         self.assertEqual(summary[0], ["product", "business_model"])
-        self.assertEqual(summary[1], "product")
+        self.assertEqual(summary[1], [0.90, 0.95])
         self.assertEqual(summary[2], ["product", "business_process"])
-        self.assertEqual(summary[3], "product")
+        self.assertEqual(summary[3], "business_model")
+        self.assertEqual(summary[4], 0.95)
 
     def test_predict_returns_public_category_hierarchy(self):
         classifier = InnoBERT(_FakeTokenizer(), _FakeModel(), _FakeDevice())
@@ -91,9 +94,15 @@ class OutputTests(unittest.TestCase):
                 ["new platform"], industry="Software", year=2024,
                 unit="term", progress=False,
             )
-        self.assertEqual(result.loc[0, "predicted_labels"], ["product", "business_model"])
-        self.assertEqual(result.loc[0, "granular_category"], "product")
-        self.assertEqual(result.loc[0, "main_category"], "product")
+        self.assertEqual(
+            result.loc[0, "predicted_subcategory_labels"], ["product", "business_model"]
+        )
+        self.assertEqual(
+            result.loc[0, "predicted_subcategory_probabilities"], [0.90, 0.70]
+        )
+        self.assertEqual(result.loc[0, "main_categories"], ["product", "business_process"])
+        self.assertEqual(result.loc[0, "highest_probability_label"], "product")
+        self.assertEqual(result.loc[0, "highest_probability"], 0.90)
         self.assertEqual(classifier.last_run_summary["classified_units"], 1)
 
     def test_long_term_errors_instead_of_silent_truncation(self):

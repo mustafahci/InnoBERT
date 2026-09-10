@@ -24,10 +24,11 @@ from .progress import progress_iter, resolve_progress
 SUMMARY_COLUMNS = (
     "unit_id",
     "processed_text",
-    "predicted_labels",
-    "granular_category",
-    "main_category",
-    "category_probability",
+    "predicted_subcategory_labels",
+    "predicted_subcategory_probabilities",
+    "main_categories",
+    "highest_probability_label",
+    "highest_probability",
 )
 
 
@@ -203,10 +204,13 @@ class InnoBERT:
             units, model_inputs, probabilities, token_counts, window_counts
         ):
             predicted = assign_labels(probs, threshold_map, uncategorized_rule)
-            dominant_label, dominant_probability = _select_dominant_assignment(probs, predicted)
-            predicted_display, granular_category, main_categories, main_category = _summarize_assignments(
-                predicted, dominant_label
-            )
+            (
+                predicted_display,
+                predicted_probabilities,
+                main_categories,
+                highest_probability_label,
+                highest_probability,
+            ) = _summarize_assignments(probs, predicted)
             row = {
                 **dict(record.metadata),
                 "source_index": record.source_index,
@@ -227,11 +231,11 @@ class InnoBERT:
                     "none"
                 ),
                 **{f"prob_{label}": float(prob) for label, prob in zip(LABELS, probs)},
-                "predicted_labels": predicted_display,
-                "granular_category": granular_category,
+                "predicted_subcategory_labels": predicted_display,
+                "predicted_subcategory_probabilities": predicted_probabilities,
                 "main_categories": main_categories,
-                "main_category": main_category,
-                "category_probability": dominant_probability,
+                "highest_probability_label": highest_probability_label,
+                "highest_probability": highest_probability,
                 "device_used": str(self.device),
             }
             if include_model_input:
@@ -336,7 +340,7 @@ def assign_labels(probabilities, thresholds, rule):
     return selected or [uncat]
 
 
-def _select_dominant_assignment(probabilities, predicted_labels):
+def _select_highest_probability_assignment(probabilities, predicted_labels):
     """Return the highest-probability label among the labels actually assigned."""
     if len(probabilities) != len(LABELS):
         raise ValueError(f"Expected 8 probabilities; received {len(probabilities)}.")
@@ -346,19 +350,26 @@ def _select_dominant_assignment(probabilities, predicted_labels):
         assigned_indices = [LABELS.index(label) for label in predicted_labels]
     except ValueError as exc:
         raise ValueError("predicted_labels contains an unknown InnoBERT label.") from exc
-    dominant_index = max(assigned_indices, key=lambda i: probabilities[i])
-    return LABELS[dominant_index], float(probabilities[dominant_index])
+    highest_index = max(assigned_indices, key=lambda i: probabilities[i])
+    return LABELS[highest_index], float(probabilities[highest_index])
 
 
-def _summarize_assignments(predicted_labels, dominant_label):
+def _summarize_assignments(probabilities, predicted_labels):
+    highest_label, highest_probability = _select_highest_probability_assignment(
+        probabilities, predicted_labels
+    )
     predicted_display = [DISPLAY_LABELS[label] for label in predicted_labels]
+    predicted_probabilities = [
+        float(probabilities[LABELS.index(label)]) for label in predicted_labels
+    ]
     assigned_main = {MAIN_CATEGORIES[label] for label in predicted_labels}
     main_categories = [category for category in MAIN_CATEGORY_ORDER if category in assigned_main]
     return (
         predicted_display,
-        DISPLAY_LABELS[dominant_label],
+        predicted_probabilities,
         main_categories,
-        MAIN_CATEGORIES[dominant_label],
+        DISPLAY_LABELS[highest_label],
+        highest_probability,
     )
 
 
