@@ -2,7 +2,7 @@
 
 InnoBERT classifies innovation-related business text using a FinBERT model fine-tuned for multi-label classification. It accepts individual terms, raw documents, aligned lists, and pandas DataFrames; supports noun-chunk, sentence, and paragraph processing; and runs on CPU, CUDA GPU, or Apple MPS.
 
-The eight granular categories are product, process, organizational, marketing, business model, sustainability, and AI. Additional uncategorized category is to filter out terms irrelevant to innovation and retained as a fallback category. Innovation subcategories are also organized into four main innovation categories:
+The seven innovation subcategories are product, process, organizational, marketing, business model, sustainability, and AI. An additional uncategorized category filters out terms irrelevant to innovation and is retained as a fallback. The innovation subcategories are also organized into four main categories:
 
 | Granular category | Main category |
 | --- | --- |
@@ -130,7 +130,7 @@ noun_results = classifier.predict(
 )
 ```
 
-Noun-chunk mode extracts short candidate terms first and then classifies them using optional industry–year prompt.
+Noun-chunk mode extracts short candidate terms first and then classifies them using an optional industry–year prompt.
 
 ### Sentences
 
@@ -181,11 +181,11 @@ The default compact output contains:
 
 - `unit_id`
 - `processed_text`
-- `predicted_subcategory_labels`: every granular category passing its threshold
-- `predicted_subcategory_probabilities`: probabilities in the same order as the subcategory labels
+- `predicted_subcat_labels`: every granular category passing its threshold
+- `predicted_subcat_probs`: probabilities in the same order as the subcategory labels
 - `main_categories`: all corresponding main categories, deduplicated
-- `highest_probability_label`: the assigned subcategory with the highest raw probability
-- `highest_probability`: that subcategory's raw probability
+- `top_subcat_label`: the assigned subcategory with the highest raw probability
+- `top_subcat_prob`: that subcategory's raw probability
 
 Request the complete auditable output to inspect model probabilities and processing details:
 
@@ -195,7 +195,9 @@ full_results = classifier.predict(text, unit="sentence", output="full")
 
 Full output adds source lineage, industry and year, all eight `prob_*` columns, token and window counts, long-input actions, and the device used.
 
-InnoBERT is a multi-label classifier. Its eight sigmoid probabilities are estimated independently and do not sum to one. `highest_probability_label` is provided only as a convenience: it is the maximum raw probability among the assigned subcategories and should not be interpreted as conceptually dominant category.
+Compact-output probabilities are rounded to three decimals for readability. Threshold decisions are made using the original full-precision values. `output="full"` preserves full precision in `predicted_subcat_probs`, `top_subcat_prob`, and all eight `prob_*` columns.
+
+InnoBERT is a multi-label classifier. Its eight sigmoid probabilities are estimated independently and do not sum to one. `top_subcat_label` is provided only as a convenience: it is the maximum raw probability among the assigned subcategories and should not be interpreted as a conceptually dominant category.
 
 ## Thresholds
 

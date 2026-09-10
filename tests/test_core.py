@@ -64,11 +64,11 @@ class OutputTests(unittest.TestCase):
             (
                 "unit_id",
                 "processed_text",
-                "predicted_subcategory_labels",
-                "predicted_subcategory_probabilities",
+                "predicted_subcat_labels",
+                "predicted_subcat_probs",
                 "main_categories",
-                "highest_probability_label",
-                "highest_probability",
+                "top_subcat_label",
+                "top_subcat_prob",
             ),
         )
 
@@ -95,15 +95,30 @@ class OutputTests(unittest.TestCase):
                 unit="term", progress=False,
             )
         self.assertEqual(
-            result.loc[0, "predicted_subcategory_labels"], ["product", "business_model"]
+            result.loc[0, "predicted_subcat_labels"], ["product", "business_model"]
         )
         self.assertEqual(
-            result.loc[0, "predicted_subcategory_probabilities"], [0.90, 0.70]
+            result.loc[0, "predicted_subcat_probs"], [0.912, 0.701]
         )
         self.assertEqual(result.loc[0, "main_categories"], ["product", "business_process"])
-        self.assertEqual(result.loc[0, "highest_probability_label"], "product")
-        self.assertEqual(result.loc[0, "highest_probability"], 0.90)
+        self.assertEqual(result.loc[0, "top_subcat_label"], "product")
+        self.assertEqual(result.loc[0, "top_subcat_prob"], 0.912)
         self.assertEqual(classifier.last_run_summary["classified_units"], 1)
+
+    def test_full_output_preserves_probability_precision(self):
+        classifier = InnoBERT(_FakeTokenizer(), _FakeModel(), _FakeDevice())
+        fake_torch = SimpleNamespace(
+            inference_mode=lambda: nullcontext(),
+            sigmoid=lambda value: value,
+        )
+        with patch.dict("sys.modules", {"torch": fake_torch}):
+            result = classifier.predict(
+                ["new platform"], industry="Software", year=2024,
+                unit="term", output="full", progress=False,
+            )
+        self.assertEqual(result.loc[0, "predicted_subcat_probs"], [0.912345, 0.701234])
+        self.assertEqual(result.loc[0, "top_subcat_prob"], 0.912345)
+        self.assertEqual(result.loc[0, "prob_inno_product"], 0.912345)
 
     def test_long_term_errors_instead_of_silent_truncation(self):
         classifier = InnoBERT(_FakeTokenizer(), _FakeModel(), _FakeDevice())
@@ -211,7 +226,7 @@ class _FakeModel:
     def __call__(self, **encoded):
         rows = encoded["input_ids"].values.shape[0]
         probabilities = np.tile(
-            np.array([[0.90, 0.10, 0.10, 0.10, 0.70, 0.10, 0.10, 0.10]]),
+            np.array([[0.912345, 0.10, 0.10, 0.10, 0.701234, 0.10, 0.10, 0.10]]),
             (rows, 1),
         )
         return SimpleNamespace(logits=_FakeTensor(probabilities))

@@ -24,11 +24,11 @@ from .progress import progress_iter, resolve_progress
 SUMMARY_COLUMNS = (
     "unit_id",
     "processed_text",
-    "predicted_subcategory_labels",
-    "predicted_subcategory_probabilities",
+    "predicted_subcat_labels",
+    "predicted_subcat_probs",
     "main_categories",
-    "highest_probability_label",
-    "highest_probability",
+    "top_subcat_label",
+    "top_subcat_prob",
 )
 
 
@@ -231,11 +231,11 @@ class InnoBERT:
                     "none"
                 ),
                 **{f"prob_{label}": float(prob) for label, prob in zip(LABELS, probs)},
-                "predicted_subcategory_labels": predicted_display,
-                "predicted_subcategory_probabilities": predicted_probabilities,
+                "predicted_subcat_labels": predicted_display,
+                "predicted_subcat_probs": predicted_probabilities,
                 "main_categories": main_categories,
-                "highest_probability_label": highest_probability_label,
-                "highest_probability": highest_probability,
+                "top_subcat_label": highest_probability_label,
+                "top_subcat_prob": highest_probability,
                 "device_used": str(self.device),
             }
             if include_model_input:
@@ -259,7 +259,12 @@ class InnoBERT:
             columns = list(dict.fromkeys([*summary_metadata_cols, *SUMMARY_COLUMNS]))
             if include_model_input:
                 columns.append("model_input")
-            return result[columns]
+            summary = result[columns].copy()
+            summary["predicted_subcat_probs"] = summary["predicted_subcat_probs"].map(
+                lambda values: [round(value, 3) for value in values]
+            )
+            summary["top_subcat_prob"] = summary["top_subcat_prob"].round(3)
+            return summary
         return result
 
     def _probabilities(self, texts, *, batch_size, max_length, strategy, stride, progress="auto"):
