@@ -2,7 +2,7 @@
 
 InnoBERT classifies innovation-related business text using a FinBERT model fine-tuned for multi-label classification. It accepts individual terms, raw documents, aligned lists, and pandas DataFrames; supports noun-chunk, sentence, and paragraph processing; and runs on CPU, CUDA GPU, or Apple MPS.
 
-The eight granular categories are product, process, organizational, marketing, business model, sustainability, AI, and uncategorized. They are also organized into four main innovation categories:
+The eight granular categories are product, process, organizational, marketing, business model, sustainability, and AI. Additional uncategorized category is to filter out terms irrelevant to innovation and retained as a fallback category. Innovation subcategories are also organized into four main innovation categories:
 
 | Granular category | Main category |
 | --- | --- |
@@ -11,9 +11,7 @@ The eight granular categories are product, process, organizational, marketing, b
 | sustainability | sustainability |
 | AI | AI |
 
-Uncategorized is a category for terms irrelevant to innovation and retained as a fallback category.
-
-The innovation-type framework is informed by the Oslo Manual 2018. InnoBERT extends the reporting taxonomy with business model, sustainability, AI, and an uncategorized outcome for the purposes of textual classification.
+The innovation-type framework is informed by the Oslo Manual 2018. InnoBERT extends the reporting taxonomy with business model, sustainability, and AI.
 
 ## Installation
 
@@ -132,7 +130,7 @@ noun_results = classifier.predict(
 )
 ```
 
-Noun-chunk mode extracts short candidate terms first and then classifies them using the validated industry–year prompt.
+Noun-chunk mode extracts short candidate terms first and then classifies them using optional industry–year prompt.
 
 ### Sentences
 
@@ -146,7 +144,7 @@ sentence_results = classifier.predict(text, unit="sentence")
 paragraph_results = classifier.predict(text, unit="paragraph")
 ```
 
-Sentence and paragraph processing use raw text and the fallback uncategorized rule by default. These modes are documented applications beyond the contextual term input used for training.
+Sentence and paragraph processing use raw text. These modes are documented applications beyond the contextual term input used during training.
 
 ## DataFrame input and identifiers
 
@@ -173,7 +171,7 @@ results = classifier.predict(
 
 `source_id_cols` constructs a unique source identifier such as `001234_2023`. Requested `metadata_cols` are copied to every extracted unit. Duplicate or missing source identifiers raise an error because they would make `unit_id` ambiguous.
 
-The package returns one row per extracted or supplied unit. It does not aggregate predictions to a firm-year measure; users retain control over any subsequent counting, weighting, dummy creation, or aggregation.
+The package returns one row per extracted or supplied unit. It does not aggregate predictions to, for example, a firm-year measure; users retain control over any subsequent counting, weighting, dummy creation, or aggregation.
 
 For very large collections of complete filings, submit manageable DataFrame chunks and save each result before continuing. This prevents all extracted units from thousands of filings being held in memory simultaneously.
 
@@ -197,7 +195,7 @@ full_results = classifier.predict(text, unit="sentence", output="full")
 
 Full output adds source lineage, industry and year, all eight `prob_*` columns, token and window counts, long-input actions, and the device used.
 
-InnoBERT is a multi-label classifier. Its eight sigmoid probabilities are estimated independently and do not sum to one. `highest_probability_label` is provided only as a transparent convenience: it is the maximum raw probability among the assigned subcategories and should not be interpreted as a threshold-adjusted or conceptually dominant category.
+InnoBERT is a multi-label classifier. Its eight sigmoid probabilities are estimated independently and do not sum to one. `highest_probability_label` is provided only as a convenience: it is the maximum raw probability among the assigned subcategories and should not be interpreted as conceptually dominant category.
 
 ## Thresholds
 
