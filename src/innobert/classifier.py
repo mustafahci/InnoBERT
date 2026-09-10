@@ -13,6 +13,15 @@ from .inputs import normalize_documents
 from .preprocessing import expand_documents
 
 
+SUMMARY_COLUMNS = (
+    "unit_id",
+    "processed_text",
+    "predicted_labels",
+    "dominant_label",
+    "dominant_probability",
+)
+
+
 class InnoBERT:
     """Load InnoBERT and classify terms, noun chunks, sentences, or paragraphs."""
 
@@ -98,6 +107,7 @@ class InnoBERT:
         year_col="year",
         filer_name_col=None,
         source_id_col=None,
+        output="summary",
         include_model_input=False,
     ):
         """Classify one text, aligned lists, or rows of a pandas DataFrame.
@@ -108,6 +118,7 @@ class InnoBERT:
         _validate_choice("unit", unit, SUPPORTED_UNITS)
         _validate_choice("context_mode", context_mode, SUPPORTED_CONTEXT_MODES)
         _validate_choice("uncategorized_rule", uncategorized_rule, SUPPORTED_UNCATEGORIZED_RULES)
+        _validate_choice("output", output, ("summary", "full"))
         if context_mode == "auto":
             context_mode = "industry_year" if unit in {"term", "noun_chunk"} else "none"
         if uncategorized_rule == "auto":
@@ -194,7 +205,13 @@ class InnoBERT:
                 row["model_input"] = model_input
             rows.append(row)
         import pandas as pd
-        return pd.DataFrame(rows)
+        result = pd.DataFrame(rows)
+        if output == "summary":
+            columns = list(SUMMARY_COLUMNS)
+            if include_model_input:
+                columns.append("model_input")
+            return result[columns]
+        return result
 
     def _probabilities(self, texts, *, batch_size, max_length, strategy, stride):
         import numpy as np

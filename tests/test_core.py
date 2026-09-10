@@ -1,6 +1,6 @@
 import unittest
 
-from innobert.classifier import _select_dominant_assignment, assign_labels
+from innobert.classifier import SUMMARY_COLUMNS, _select_dominant_assignment, assign_labels
 from innobert.constants import DEFAULT_THRESHOLDS, LABELS, resolve_thresholds
 from innobert.inputs import normalize_documents
 from innobert.preprocessing import split_paragraphs, split_sentences
@@ -44,6 +44,20 @@ class DecisionRuleTests(unittest.TestCase):
 
     def test_fallback_assigns_uncategorized_when_none_cross(self):
         self.assertEqual(assign_labels([0] * 8, DEFAULT_THRESHOLDS, "fallback"), ["inno_uncategorized"])
+
+
+class OutputTests(unittest.TestCase):
+    def test_summary_columns_are_compact_and_traceable(self):
+        self.assertEqual(
+            SUMMARY_COLUMNS,
+            (
+                "unit_id",
+                "processed_text",
+                "predicted_labels",
+                "dominant_label",
+                "dominant_probability",
+            ),
+        )
 
 
 class InputTests(unittest.TestCase):

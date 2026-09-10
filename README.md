@@ -174,19 +174,29 @@ Set `uncategorized_rule="gatekeeper"` or `"fallback"` to override the mode defau
 
 ## Output
 
-The returned DataFrame preserves source-to-unit lineage and includes:
+By default, `predict()` returns a compact DataFrame with five columns:
 
-- `source_index`, `source_id`, `unit_id`, `unit_index`, and `unit_type`;
-- `source_text` and `processed_text`;
-- `industry` and `year`;
-- `token_count`, `window_count`, and `truncated_or_windowed`;
-- one probability column for every label;
-- `predicted_labels`, `dominant_label`, and `dominant_probability`;
+- `unit_id`, which preserves the source and within-source unit;
+- `processed_text`;
+- `predicted_labels`;
+- `dominant_label`;
+- `dominant_probability`.
 
-`dominant_label` is the highest-probability label among `predicted_labels`, so it never contradicts the gatekeeper or fallback assignment. The complete raw scores remain available in the eight `prob_*` columns.
-- `device_used`.
+`dominant_label` is the highest-probability label among `predicted_labels`, so it never contradicts the gatekeeper or fallback assignment.
 
-Set `include_model_input=True` to audit the exact string sent to the tokenizer. Results can be saved normally:
+Request the complete auditable output when you need source lineage, context, diagnostics, or threshold analysis:
+
+```python
+full_results = classifier.predict(
+    text,
+    unit="sentence",
+    output="full",
+)
+```
+
+The full DataFrame adds `source_index`, `source_id`, `unit_index`, `unit_type`, `source_text`, `industry`, `year`, `token_count`, `window_count`, `truncated_or_windowed`, `device_used`, and all eight `prob_*` columns. Use these probability columns to inspect classifications and select thresholds appropriate for the application.
+
+Set `include_model_input=True` to include the exact string sent to the tokenizer; it is retained in either compact or full output. Results can be saved normally:
 
 ```python
 results.to_csv("innobert_results.csv", index=False)
@@ -202,6 +212,8 @@ results.to_parquet("innobert_results.parquet", index=False)
 - `"error"`: stop and report the affected rows.
 
 The category-wise maximum makes paragraph output an “innovation evidence anywhere in the paragraph” score. It is not a calibrated probability for the paragraph as a whole.
+
+Use `output="full"` to inspect `window_count`, `truncated_or_windowed`, and the window-aggregated category probabilities.
 
 ## Common errors
 
