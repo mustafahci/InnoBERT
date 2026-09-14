@@ -4,7 +4,7 @@ InnoBERT helps researchers organize business language related to innovation into
 
 Importantly, InnoBERT classifies the nature of the submitted text; it does not determine whether the language is novel. In the measurement procedure developed by Ahci and Joos (2026), novelty is established first by comparing terms with prior economy-wide business disclosures. InnoBERT is then used to classify the nature of the novel terms. See Ahci and Joos (2026) below for the complete measure construction and interpretation.
 
-When used independently of that procedure, an InnoBERT label should be interpreted as a semantic category assignment rather than, by itself, evidence that the focal firm developed, adopted, or implemented an innovation. Such interpretations require additional information about novelty, context, timing, and attribution.
+When used independently, an InnoBERT label should be interpreted as a semantic category assignment rather than, by itself, evidence of innovation. Such interpretations require additional information about novelty, context, timing, and attribution.
 
 The seven substantive subcategories are product, process, organizational, marketing, business model, sustainability, and AI. An eighth category, uncategorized, rejects terms that may not belong to a substantive innovation category. The seven substantive subcategories are also organized into four main categories:
 
