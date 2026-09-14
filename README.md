@@ -8,16 +8,17 @@ In the measurement approach developed by Ahci and Joos (2026) in _Beyond Inventi
 
 When InnoBERT is used independently of this measurement procedure, its output should be interpreted as a semantic category assignment. Drawing conclusions about innovation additionally requires information about novelty, context, timing, and attribution.
 
-The seven substantive subcategories are product, process, organizational, marketing, business model, sustainability, and AI. This innovation-type framework is drawing on the Oslo Manual 2018, however, InnoBERT extends the reporting taxonomy with business model, sustainability, and AI. An eighth category, `uncategorized`, rejects terms that may not belong to a substantive innovation category (e.g., regular non-innovation terms, such as 'mergers and acquisitions', 'cash flow statement', 'financing activities', etc.).
+The seven substantive subcategories are product, process, organizational, marketing, business model, sustainability, and AI. The classification framework draws on both the 2005 and 2018 editions of the Oslo Manual. The 2005 edition distinguishes product, process, organizational, and marketing innovation. The 2018 edition reorganizes these concepts into two broader types, namely product innovation and business-process innovation, with process, organizational and marketing functions included within the broader business-process category. InnoBERT preserves the more granular distinctions from the 2005 framework while organizing them consistently with the broader 2018 structure. It additionally identifies business model, sustainability, and AI as separate categories relevant to contemporary business disclosures.
 
-The seven substantive subcategories are also organized into four broader categories:
-
+The seven substantive subcategories are therefore organized into four broader categories:
 | Granular category | Broad category |
 | --- | --- |
 | product | product |
 | process, organizational, marketing, business model | business process |
 | sustainability | sustainability |
 | AI | AI |
+
+An eighth category, `uncategorized`, is used when the submitted text does not receive sufficient support for any substantive innovation category under the applicable decision rule. It commonly captures routine financial, corporate, or reporting terminology, such as “cash flow statement” or “financing activities”. An `uncategorized` assignment does not necessarily mean that the text is economically irrelevant; it means that no substantive innovation-related category was assigned. See the `Thresholds` section below for more information about decision rules.
 
 ## Installation
 
