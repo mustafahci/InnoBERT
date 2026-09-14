@@ -8,15 +8,25 @@ The measurement approach developed by Ahci and Joos (2026) in _Beyond Invention:
 
 ## Category framework
 
-The seven substantive subcategories are product, process, organizational, marketing, business model, sustainability, and AI. The classification framework draws on both the 2005 and 2018 editions of the Oslo Manual. The 2005 edition distinguishes product, process, organizational, and marketing innovation. The 2018 edition reorganizes these concepts into two broader types, namely product innovation and business-process innovation, with process, organizational and marketing functions included within the broader business-process category. InnoBERT preserves the more granular distinctions from the 2005 framework, while additionally identifying business model, sustainability, and AI as separate categories relevant to contemporary business disclosures.
+The seven substantive subcategories are product, process, organizational, marketing, business model, sustainability, and AI. The classification framework draws on both the 2005 and 2018 editions of the Oslo Manual. The 2005 edition distinguishes product, process, organizational, and marketing innovation. InnoBERT preserves these granular distinctions while additionally identifying business model, sustainability, and AI as separate categories relevant to contemporary business disclosures.
 
-The seven substantive subcategories are therefore organized into four broader categories in accordance with updated Oslo Manual (2018):
+The 2018 edition reorganizes the earlier concepts into two broader types: product innovation and business-process innovation. Process, organizational, and marketing functions are incorporated within the broader business-process category. Drawing on this distinction, InnoBERT organizes its seven substantive subcategories into four broad categories. For this reporting hierarchy, business model is grouped under business process, while sustainability and AI remain separate broad thematic categories:
+
 | Granular category | Broad category |
 | --- | --- |
 | product | product |
 | process, organizational, marketing, business model | business process |
 | sustainability | sustainability |
 | AI | AI |
+
+Product and business process represent conceptually distinct innovation types, although an observation may be assigned to both when it concerns a combined change. AI and sustainability are cross-cutting thematic categories: an AI- or sustainability-related innovation may concern a product, a business process, or both. InnoBERT therefore uses multi-label classification and can assign more than one substantive category to the same text.
+
+| Illustrative text | Possible assignments |
+|---|---|
+| AI-enabled inventory forecasting | AI; process |
+| Low-emission packaging product | sustainability; product |
+| AI system for reducing supply-chain emissions | AI; sustainability; process |
+| Digital platform with a subscription revenue model | product; business model |
 
 An eighth category, `uncategorized`, is used when the submitted text does not receive sufficient support for any substantive innovation category under the applicable decision rule. It commonly captures routine financial, corporate, or reporting terminology, such as “cash flow statement” or “financing activities”. An `uncategorized` assignment does not necessarily mean that the text is economically irrelevant; it means that no substantive innovation-related category was assigned. See the `Thresholds` section below for more information about decision rules.
 
