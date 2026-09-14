@@ -1,10 +1,12 @@
 # InnoBERT
 
-InnoBERT classifies innovation-related business text using a FinBERT model fine-tuned for multi-label classification. It accepts individual terms, raw documents, aligned lists, and pandas DataFrames; supports noun-chunk, sentence, and paragraph processing; and runs on CPU, CUDA GPU, or Apple MPS.
+InnoBERT was developed to classify the nature of candidate innovation-related terms as part of the measurement procedure introduced by Ahci and Joos (2026). That procedure has two distinct stages. First, it identifies terms that are novel relative to prior economy-wide business disclosures. Second, InnoBERT classifies those novel terms by category. Novelty is therefore established before a term is submitted to InnoBERT; the classifier itself does not determine whether a term is new or whether it represents implemented innovation. See Ahci and Joos (2026) below for the complete measure construction and interpretation.
 
-An InnoBERT label indicates the category or topic most closely associated with the text submitted to the classifier. When InnoBERT is used independently, its output should be interpreted as category-specific topic salience rather than evidence of implemented innovation. In the accompanying research, the innovation interpretation arises from the complete measurement procedure, which first identifies economy-wide novel terms and then uses InnoBERT to classify their nature. See Ahci and Joos (2026) below for the complete measure construction and interpretation.
+When used independently, an InnoBERT label indicates the category most closely associated with the submitted text. It should be interpreted as a semantic category assignment rather than, by itself, evidence that the focal firm developed, adopted, or implemented an innovation. Establishing those constructs requires the novelty procedure and any additional contextual criteria appropriate to the research design.
 
-The seven innovation subcategories are product, process, organizational, marketing, business model, sustainability, and AI. An additional uncategorized category filters out terms irrelevant to innovation and is retained as a fallback. The innovation subcategories are also organized into four main categories:
+InnoBERT uses a FinBERT model fine-tuned for multi-label classification. The package accepts individual terms, raw documents, aligned lists, and pandas DataFrames. It supports term, noun-chunk, sentence, and paragraph processing and can run on a CPU, CUDA-enabled GPU, or Apple MPS device.
+
+The seven substantive subcategories are product, process, organizational, marketing, business model, sustainability, and AI. An eighth category, uncategorized, is used to reject terms that may not belong to a substantive innovation category. For terms and noun chunks, it operates as a conservative gatekeeper by default; for sentences and paragraphs, it is used as a fallback when no substantive category passes its threshold. The seven substantive subcategories are also organized into four main categories:
 
 | Granular category | Main category |
 | --- | --- |
