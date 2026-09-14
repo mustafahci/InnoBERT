@@ -299,16 +299,15 @@ class _FakeModel:
 
 
 class _WindowTokenizer:
+    cls_token_id = 1001
+    sep_token_id = 1002
+
     def __call__(self, text, *, add_special_tokens=True, **kwargs):
         ids = list(range(len(text.split())))
         return {"input_ids": [1001, *ids, 1002] if add_special_tokens else ids}
 
     def num_special_tokens_to_add(self, pair=False):
         return 2
-
-    def build_inputs_with_special_tokens(self, ids):
-        return [1001, *ids, 1002]
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -343,6 +343,13 @@ def _build_complete_token_windows(tokenizer, text, *, max_length, stride):
     if token_ids and isinstance(token_ids[0], (list, tuple)):
         raise RuntimeError("Expected one unbatched token sequence while constructing long-text windows.")
     special_count = int(tokenizer.num_special_tokens_to_add(pair=False))
+    cls_token_id = getattr(tokenizer, "cls_token_id", None)
+    sep_token_id = getattr(tokenizer, "sep_token_id", None)
+    if special_count != 2 or cls_token_id is None or sep_token_id is None:
+        raise RuntimeError(
+            "InnoBERT requires a BERT tokenizer with one [CLS] and one [SEP] "
+            "special token for a single input sequence."
+        )
     content_capacity = max_length - special_count
     if content_capacity < 1:
         raise ValueError(
@@ -365,7 +372,7 @@ def _build_complete_token_windows(tokenizer, text, *, max_length, stride):
             slices.pop()
     windows = []
     for token_slice in slices:
-        input_ids = list(tokenizer.build_inputs_with_special_tokens(list(token_slice)))
+        input_ids = [int(cls_token_id), *list(token_slice), int(sep_token_id)]
         windows.append({
             "input_ids": input_ids,
             "attention_mask": [1] * len(input_ids),
