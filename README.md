@@ -1,16 +1,16 @@
 # InnoBERT
 
-InnoBERT helps researchers organize business language related to innovation into seven economically meaningful categories. Namely, it distinguishes whether a term or passage relates to products, processes, organizational practices, marketing, business models, sustainability, or artificial intelligence. The package can process individual terms, raw documents, aligned lists, and pandas DataFrames using a CPU, CUDA-enabled GPU, or Apple MPS device.
+InnoBERT helps researchers classify business language into seven economically meaningful categories: **product, process, organizational, marketing, business model, sustainability, and artificial intelligence (AI)**. It can process individual terms, raw documents, aligned lists, and pandas DataFrames on a CPU, CUDA-enabled GPU, or Apple MPS device.
 
-Importantly, InnoBERT classifies submitted text into innovation-related categories, yet it does not determine whether the language itself is novel. For example, a term may be classified as product-related even if the firm has used that term for many years. Suppose InnoBERT receives the term “machine learning”: it may classify that term as AI. But InnoBERT does not tell you whether “machine learning” is new for that firm, new relative to other firms, or new at that point in time. An InnoBERT classification should therefore not, by itself, be interpreted as evidence of innovation.
+Importantly, InnoBERT classifies the semantic content of submitted text, but it does not determine whether that language is novel. For example, it may classify “machine learning” as AI, but it does not establish whether the term is new for the firm, relative to other firms, or at that point in time. An InnoBERT classification should therefore not, by itself, be interpreted as evidence of innovation.
 
-In the measurement approach developed by Ahci and Joos (2026) in _Beyond Invention: The Composition and Development of Innovation-Related Capabilities_ (Working Paper), these two steps are explicitly separated. First, novelty is identified by comparing a firm's terms with prior economy-wide business disclosures. Second, InnoBERT classifies the novel terms according to the type of innovation-related language they represent. See Ahci and Joos (2026) below for the complete measure construction and interpretation.
+The measurement approach developed by Ahci and Joos (2026) in _Beyond Invention: The Composition and Development of Innovation-Related Capabilities_ separates these tasks. It first identifies novel terms by comparing firm disclosures with prior economy-wide business disclosures and then uses InnoBERT to classify those terms. When used independently, InnoBERT’s output should be interpreted as a semantic category assignment. See Ahci and Joos (2026) below for the complete measure construction and interpretation.
 
-When InnoBERT is used independently of this measurement procedure, its output should be interpreted as a semantic category assignment. Drawing conclusions about innovation additionally requires information about novelty, context, timing, and attribution.
+## Category framework
 
-The seven substantive subcategories are product, process, organizational, marketing, business model, sustainability, and AI. The classification framework draws on both the 2005 and 2018 editions of the Oslo Manual. The 2005 edition distinguishes product, process, organizational, and marketing innovation. The 2018 edition reorganizes these concepts into two broader types, namely product innovation and business-process innovation, with process, organizational and marketing functions included within the broader business-process category. InnoBERT preserves the more granular distinctions from the 2005 framework while organizing them consistently with the broader 2018 structure. It additionally identifies business model, sustainability, and AI as separate categories relevant to contemporary business disclosures.
+The seven substantive subcategories are product, process, organizational, marketing, business model, sustainability, and AI. The classification framework draws on both the 2005 and 2018 editions of the Oslo Manual. The 2005 edition distinguishes product, process, organizational, and marketing innovation. The 2018 edition reorganizes these concepts into two broader types, namely product innovation and business-process innovation, with process, organizational and marketing functions included within the broader business-process category. InnoBERT preserves the more granular distinctions from the 2005 framework, while additionally identifying business model, sustainability, and AI as separate categories relevant to contemporary business disclosures.
 
-The seven substantive subcategories are therefore organized into four broader categories:
+The seven substantive subcategories are therefore organized into four broader categories in accordance with updated Oslo Manual (2018):
 | Granular category | Broad category |
 | --- | --- |
 | product | product |
@@ -49,20 +49,9 @@ python -m spacy download en_core_web_lg
 
 Noun-chunk extraction uses `en_core_web_lg` by default to preserve the preprocessing used in development. Sentence, paragraph, and already-extracted term processing do not require spaCy.
 
-### Google Colab
-
-Run these cells at the beginning of a Colab notebook:
-
-```python
-%pip install "innobert[noun-chunks] @ git+https://github.com/mustafahci/InnoBERT.git@v0.2.4"
-!python -m spacy download en_core_web_lg
-```
-
-Then restart the runtime if Colab requests it. To use a GPU, select a GPU runtime and keep `device="auto"`.
-
 ## Hugging Face access
 
-The public model downloads from `mustafahci/InnoBERT` without a Hugging Face account or access token. Authentication is necessary only if access to the model repository is restricted in the future.
+The public model downloads from `mustafahci/InnoBERT` without a Hugging Face account or access token. Authentication is necessary only if access to the model repository is restricted in the future. We also provide a simple interface app using Hugging Face Spaces for non-technical users or simple tasks. 
 
 ## Load the model
 
