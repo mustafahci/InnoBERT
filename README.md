@@ -154,9 +154,10 @@ Sentence and paragraph processing use raw text. These modes are documented appli
 
 InnoBERT produces multiple output rows from each input document (e.g., document-noun chunks). Researchers should therefore provide a unique document identifier so that every extracted term, sentence, or paragraph can be linked back to its source.
 
-Use source_id_col="document_id" when the DataFrame already contains a unique identifier.
-Use source_id_cols=["gvkey", "fyear"] to construct an identifier from multiple columns.
-Use metadata_cols=["gvkey", "fyear"] to copy identifying variables into every output row.
+- Use `source_id_col="document_id"` when the DataFrame already contains a unique identifier. <br>
+- Use `source_id_cols=["gvkey", "fyear"]` to construct an identifier from multiple columns. <br>
+- Use `metadata_cols=["gvkey", "fyear"]` to copy identifying variables into every output row. <br>
+
 If neither option is supplied, InnoBERT uses the DataFrame index. This may be less transparent and can change after filtering or resetting the index.
 
 Source identifiers must be unique across input rows. If a firm-year contains multiple documents or passages, include an additional identifier such as an accession number or passage number.
