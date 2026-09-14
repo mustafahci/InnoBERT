@@ -4,8 +4,6 @@ InnoBERT classifies innovation-related business text using a FinBERT model fine-
 
 An InnoBERT label describes the innovation type associated with the text submitted to the classifier. It does not by itself establish that the focal firm adopted, developed, or implemented the labelled activity.
 
-> **Correctness notice:** versions through 0.2.1 could omit overflow content after the first tokenizer window for some dependency combinations. Version 0.2.2 constructs and verifies complete token coverage explicitly. Any paragraph-window results produced with an earlier version should be rerun.
-
 The seven innovation subcategories are product, process, organizational, marketing, business model, sustainability, and AI. An additional uncategorized category filters out terms irrelevant to innovation and is retained as a fallback. The innovation subcategories are also organized into four main categories:
 
 | Granular category | Main category |
