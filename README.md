@@ -1,21 +1,23 @@
 # InnoBERT
 
-InnoBERT helps researchers organize business language related to innovation into economically meaningful categories. It distinguishes whether a term or passage relates to products, processes, organizational practices, marketing, business models, sustainability, or artificial intelligence. The package can process individual terms, raw documents, aligned lists, and pandas DataFrames using a CPU, CUDA-enabled GPU, or Apple MPS device.
+InnoBERT helps researchers organize business language related to innovation into seven economically meaningful categories. Namely, it distinguishes whether a term or passage relates to products, processes, organizational practices, marketing, business models, sustainability, or artificial intelligence. The package can process individual terms, raw documents, aligned lists, and pandas DataFrames using a CPU, CUDA-enabled GPU, or Apple MPS device.
 
-Importantly, InnoBERT classifies the nature of the submitted text; it does not determine whether the language is novel. In the measurement procedure developed by Ahci and Joos (2026), novelty is established first by comparing terms with prior economy-wide business disclosures. InnoBERT is then used to classify the nature of the novel terms. See Ahci and Joos (2026) below for the complete measure construction and interpretation.
+Importantly, InnoBERT classifies submitted text into innovation-related categories, yet it does not determine whether the language itself is novel. For example, a term may be classified as product-related even if the firm has used that term for many years. Suppose InnoBERT receives the term “machine learning”: it may classify that term as AI. But InnoBERT does not tell you whether “machine learning” is new for that firm, new relative to other firms, or new at that point in time. An InnoBERT classification should therefore not, by itself, be interpreted as evidence of innovation.
 
-When used independently, an InnoBERT label should be interpreted as a semantic category assignment rather than, by itself, evidence of innovation. Such interpretations require additional information about novelty, context, timing, and attribution.
+In the measurement approach developed by Ahci and Joos (2026) in _Beyond Invention: The Composition and Development of Innovation-Related Capabilities_ (Working Paper), these two steps are explicitly separated. First, novelty is identified by comparing a firm's terms with prior economy-wide business disclosures. Second, InnoBERT classifies the novel terms according to the type of innovation-related language they represent. See Ahci and Joos (2026) below for the complete measure construction and interpretation.
 
-The seven substantive subcategories are product, process, organizational, marketing, business model, sustainability, and AI. An eighth category, uncategorized, rejects terms that may not belong to a substantive innovation category. The seven substantive subcategories are also organized into four main categories:
+When InnoBERT is used independently of this measurement procedure, its output should be interpreted as a semantic category assignment. Drawing conclusions about innovation additionally requires information about novelty, context, timing, and attribution.
 
-| Granular category | Main category |
+The seven substantive subcategories are product, process, organizational, marketing, business model, sustainability, and AI. This innovation-type framework is drawing on the Oslo Manual 2018, however, InnoBERT extends the reporting taxonomy with business model, sustainability, and AI. An eighth category, `uncategorized`, rejects terms that may not belong to a substantive innovation category.
+
+The seven substantive subcategories are also organized into four broader categories:
+
+| Granular category | Broad category |
 | --- | --- |
 | product | product |
 | process, organizational, marketing, business model | business process |
 | sustainability | sustainability |
 | AI | AI |
-
-The innovation-type framework is informed by the Oslo Manual 2018. InnoBERT extends the reporting taxonomy with business model, sustainability, and AI.
 
 ## Installation
 
