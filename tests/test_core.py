@@ -306,12 +306,8 @@ class _WindowTokenizer:
     def num_special_tokens_to_add(self, pair=False):
         return 2
 
-    def prepare_for_model(self, ids, **kwargs):
-        return {
-            "input_ids": [1001, *ids, 1002],
-            "attention_mask": [1] * (len(ids) + 2),
-            "token_type_ids": [0] * (len(ids) + 2),
-        }
+    def build_inputs_with_special_tokens(self, ids):
+        return [1001, *ids, 1002]
 
 
 if __name__ == "__main__":

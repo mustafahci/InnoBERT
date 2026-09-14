@@ -363,16 +363,13 @@ def _build_complete_token_windows(tokenizer, text, *, max_length, stride):
         if slices[-1] and len(slices) > 1 and len(slices[-1]) <= stride:
             starts.pop()
             slices.pop()
-    windows = [
-        dict(tokenizer.prepare_for_model(
-            token_slice,
-            add_special_tokens=True,
-            padding=False,
-            truncation=False,
-            return_attention_mask=True,
-        ))
-        for token_slice in slices
-    ]
+    windows = []
+    for token_slice in slices:
+        input_ids = list(tokenizer.build_inputs_with_special_tokens(list(token_slice)))
+        windows.append({
+            "input_ids": input_ids,
+            "attention_mask": [1] * len(input_ids),
+        })
     if token_ids and starts[-1] + len(slices[-1]) != len(token_ids):
         raise RuntimeError("Internal long-text coverage check failed: final content token was omitted.")
     if any(len(window["input_ids"]) > max_length for window in windows):
