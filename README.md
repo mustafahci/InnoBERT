@@ -2,7 +2,7 @@
 
 InnoBERT classifies innovation-related business text using a FinBERT model fine-tuned for multi-label classification. It accepts individual terms, raw documents, aligned lists, and pandas DataFrames; supports noun-chunk, sentence, and paragraph processing; and runs on CPU, CUDA GPU, or Apple MPS.
 
-An InnoBERT label describes the innovation type associated with the text submitted to the classifier. It does not by itself establish that the focal firm adopted, developed, or implemented the labelled activity.
+An InnoBERT label indicates the category or topic most closely associated with the text submitted to the classifier. When InnoBERT is used independently, its output should be interpreted as category-specific topic salience rather than evidence of implemented innovation. In the accompanying research, the innovation interpretation arises from the complete measurement procedure, which first identifies economy-wide novel terms and then uses InnoBERT to classify their nature. See Ahci and Joos (2026) below for the complete measure construction and interpretation.
 
 The seven innovation subcategories are product, process, organizational, marketing, business model, sustainability, and AI. An additional uncategorized category filters out terms irrelevant to innovation and is retained as a fallback. The innovation subcategories are also organized into four main categories:
 
@@ -132,18 +132,7 @@ noun_results = classifier.predict(
 )
 ```
 
-Noun-chunk mode extracts short candidate terms first and then classifies them using an optional industry–year prompt.
-
-Noun-chunk extraction deliberately removes the surrounding assertion. For example, all four sentences below send the same phrase—`artificial intelligence`—to the classifier when industry and year are held fixed:
-
-| Source sentence | Phrase classified |
-| --- | --- |
-| We use artificial intelligence. | artificial intelligence |
-| We do not use artificial intelligence. | artificial intelligence |
-| We may use artificial intelligence next year. | artificial intelligence |
-| Our competitors use artificial intelligence. | artificial intelligence |
-
-Noun-chunk mode therefore identifies the topic of an extracted phrase, not negation, adoption status, timing, attribution, or whether the activity belongs to the focal firm. Researchers constructing adoption or realized-activity measures must add suitable contextual checks or use a separately validated sentence-level design.
+Noun-chunk mode extracts short candidate terms first and then classifies them using an optional industry–year prompt. Because noun-chunk extraction removes the surrounding sentence, these classifications do not capture negation, timing, attribution, or whether the described activity belongs to the focal firm. Researchers seeking to measure adoption or realized activity should apply additional contextual criteria appropriate to their research design.
 
 ### Sentences
 
