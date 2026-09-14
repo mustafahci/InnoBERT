@@ -29,7 +29,7 @@ Install [Anaconda or Miniconda](https://www.anaconda.com/docs/getting-started/ma
 conda create -n innobert python=3.11 -y
 conda activate innobert
 python -m pip install --upgrade pip
-python -m pip install "innobert[noun-chunks,notebook] @ git+https://github.com/mustafahci/InnoBERT.git@main"
+python -m pip install "innobert[noun-chunks,notebook] @ git+https://github.com/mustafahci/InnoBERT.git@v0.2.2"
 python -m spacy download en_core_web_lg
 python -m ipykernel install --user --name innobert --display-name "Python (InnoBERT)"
 jupyter lab
@@ -40,7 +40,7 @@ Select **Python (InnoBERT)** as the notebook kernel. Always use `python -m pip` 
 ### Existing Python or IPython environment
 
 ```bash
-python -m pip install "innobert[noun-chunks,notebook] @ git+https://github.com/mustafahci/InnoBERT.git@main"
+python -m pip install "innobert[noun-chunks,notebook] @ git+https://github.com/mustafahci/InnoBERT.git@v0.2.2"
 python -m spacy download en_core_web_lg
 ```
 
@@ -51,27 +51,15 @@ Noun-chunk extraction uses `en_core_web_lg` by default to preserve the preproces
 Run these cells at the beginning of a Colab notebook:
 
 ```python
-%pip install "innobert[noun-chunks] @ git+https://github.com/mustafahci/InnoBERT.git@main"
+%pip install "innobert[noun-chunks] @ git+https://github.com/mustafahci/InnoBERT.git@v0.2.2"
 !python -m spacy download en_core_web_lg
 ```
 
 Then restart the runtime if Colab requests it. To use a GPU, select a GPU runtime and keep `device="auto"`.
 
-## Authenticate with Hugging Face
+## Hugging Face access
 
-The model downloads from `mustafahci/InnoBERT`. When authentication is required, use the secure login prompt:
-
-```python
-from huggingface_hub import notebook_login
-
-notebook_login()
-```
-
-For terminal scripts, use:
-
-```bash
-hf auth login
-```
+The public model downloads from `mustafahci/InnoBERT` without a Hugging Face account or access token. Authentication is necessary only if access to the model repository is restricted in the future.
 
 ## Load the model
 
@@ -135,6 +123,9 @@ noun_results = classifier.predict(
 ```
 
 Noun-chunk mode extracts short candidate terms first and then classifies them using an optional industry–year prompt. Because noun-chunk extraction removes the surrounding sentence, these classifications do not capture negation, timing, attribution, or whether the described activity belongs to the focal firm. Researchers seeking to measure adoption or realized activity should apply additional contextual criteria appropriate to their research design.
+
+
+Noun-chunk mode produces candidate phrases rather than a final set of novel innovation terms. Identical processed phrases are deduplicated within each source document, so repetition within one document does not increase the number of classified units. The same phrase is retained separately when it appears in different source documents or firm-years, and each row remains linked to its source through `source_id` and `unit_id`. The `unit_id` is an output identifier, not a character position or sentence location; InnoBERT does not report within-document mention counts or text offsets.
 
 ### Sentences
 
