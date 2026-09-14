@@ -230,6 +230,8 @@ class InnoBERT:
                     "truncated" if long_text_strategy == "truncate" and token_count > max_length else
                     "none"
                 ),
+                "uncategorized_rule": uncategorized_rule,
+                "assignment_reason": _assignment_reason(probs, predicted, threshold_map, uncategorized_rule),
                 **{f"prob_{label}": float(prob) for label, prob in zip(LABELS, probs)},
                 "predicted_subcat_labels": predicted_display,
                 "predicted_subcat_probs": predicted_probabilities,
@@ -300,15 +302,9 @@ class InnoBERT:
 
         chunks, owners = [], []
         for owner, text in enumerate(texts):
-            encoded = self.tokenizer(
-                text, truncation=True, max_length=max_length, stride=stride,
-                return_overflowing_tokens=True, padding=False,
-            )
-            for i, input_ids in enumerate(encoded["input_ids"]):
-                chunk = {"input_ids": input_ids}
-                for key in ("attention_mask", "token_type_ids"):
-                    if key in encoded:
-                        chunk[key] = encoded[key][i]
+            for chunk in _build_complete_token_windows(
+                self.tokenizer, text, max_length=max_length, stride=stride
+            ):
                 chunks.append(chunk)
                 owners.append(owner)
         aggregate = np.full((len(texts), len(LABELS)), -np.inf, dtype=float)
@@ -329,6 +325,61 @@ class InnoBERT:
         return aggregate, token_counts, window_counts, ceil(len(chunks) / batch_size)
 
 
+def _build_complete_token_windows(tokenizer, text, *, max_length, stride):
+    """Build overlapping windows while guaranteeing coverage of every content token.
+
+    This deliberately avoids tokenizer overflow metadata, whose behavior has varied
+    across tokenizer and Transformers versions. The text is tokenized once without
+    special tokens, then sliced explicitly and wrapped with model-specific specials.
+    """
+    encoded = tokenizer(
+        text,
+        add_special_tokens=False,
+        truncation=False,
+        return_attention_mask=False,
+        return_token_type_ids=False,
+    )
+    token_ids = encoded["input_ids"]
+    if token_ids and isinstance(token_ids[0], (list, tuple)):
+        raise RuntimeError("Expected one unbatched token sequence while constructing long-text windows.")
+    special_count = int(tokenizer.num_special_tokens_to_add(pair=False))
+    content_capacity = max_length - special_count
+    if content_capacity < 1:
+        raise ValueError(
+            f"max_length={max_length} leaves no room for content after {special_count} special tokens."
+        )
+    if stride >= content_capacity:
+        raise ValueError(
+            f"stride must be smaller than the content capacity ({content_capacity}) "
+            f"for max_length={max_length}."
+        )
+    if not token_ids:
+        starts = [0]
+        slices = [[]]
+    else:
+        step = content_capacity - stride
+        starts = list(range(0, len(token_ids), step))
+        slices = [token_ids[start:start + content_capacity] for start in starts]
+        if slices[-1] and len(slices) > 1 and len(slices[-1]) <= stride:
+            starts.pop()
+            slices.pop()
+    windows = [
+        dict(tokenizer.prepare_for_model(
+            token_slice,
+            add_special_tokens=True,
+            padding=False,
+            truncation=False,
+            return_attention_mask=True,
+        ))
+        for token_slice in slices
+    ]
+    if token_ids and starts[-1] + len(slices[-1]) != len(token_ids):
+        raise RuntimeError("Internal long-text coverage check failed: final content token was omitted.")
+    if any(len(window["input_ids"]) > max_length for window in windows):
+        raise RuntimeError("Internal long-text coverage check failed: a window exceeds max_length.")
+    return windows
+
+
 def assign_labels(probabilities, thresholds, rule):
     """Apply the notebook-defined multi-label decision rule."""
     if len(probabilities) != len(LABELS):
@@ -343,6 +394,19 @@ def assign_labels(probabilities, thresholds, rule):
         if probability >= thresholds[label]
     ]
     return selected or [uncat]
+
+
+def _assignment_reason(probabilities, predicted_labels, thresholds, rule):
+    uncat_probability = float(probabilities[-1])
+    uncat_threshold = float(thresholds[LABELS[-1]])
+    if rule == "gatekeeper" and predicted_labels == [LABELS[-1]]:
+        return (
+            f"uncategorized gatekeeper: {uncat_probability:.3f} >= {uncat_threshold:.3f}; "
+            "innovation labels suppressed"
+        )
+    if predicted_labels == [LABELS[-1]]:
+        return "fallback: no innovation subcategory met its threshold"
+    return "assigned subcategory threshold(s) met"
 
 
 def _select_highest_probability_assignment(probabilities, predicted_labels):

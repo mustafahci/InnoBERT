@@ -2,6 +2,10 @@
 
 InnoBERT classifies innovation-related business text using a FinBERT model fine-tuned for multi-label classification. It accepts individual terms, raw documents, aligned lists, and pandas DataFrames; supports noun-chunk, sentence, and paragraph processing; and runs on CPU, CUDA GPU, or Apple MPS.
 
+An InnoBERT label describes the innovation type associated with the text submitted to the classifier. It does not by itself establish that the focal firm adopted, developed, or implemented the labelled activity.
+
+> **Correctness notice:** versions through 0.2.1 could omit overflow content after the first tokenizer window for some dependency combinations. Version 0.2.2 constructs and verifies complete token coverage explicitly. Any paragraph-window results produced with an earlier version should be rerun.
+
 The seven innovation subcategories are product, process, organizational, marketing, business model, sustainability, and AI. An additional uncategorized category filters out terms irrelevant to innovation and is retained as a fallback. The innovation subcategories are also organized into four main categories:
 
 | Granular category | Main category |
@@ -132,6 +136,17 @@ noun_results = classifier.predict(
 
 Noun-chunk mode extracts short candidate terms first and then classifies them using an optional industry–year prompt.
 
+Noun-chunk extraction deliberately removes the surrounding assertion. For example, all four sentences below send the same phrase—`artificial intelligence`—to the classifier when industry and year are held fixed:
+
+| Source sentence | Phrase classified |
+| --- | --- |
+| We use artificial intelligence. | artificial intelligence |
+| We do not use artificial intelligence. | artificial intelligence |
+| We may use artificial intelligence next year. | artificial intelligence |
+| Our competitors use artificial intelligence. | artificial intelligence |
+
+Noun-chunk mode therefore identifies the topic of an extracted phrase, not negation, adoption status, timing, attribution, or whether the activity belongs to the focal firm. Researchers constructing adoption or realized-activity measures must add suitable contextual checks or use a separately validated sentence-level design.
+
 ### Sentences
 
 ```python
@@ -171,6 +186,8 @@ results = classifier.predict(
 
 `source_id_cols` constructs a unique source identifier such as `001234_2023`. Requested `metadata_cols` are copied to every extracted unit. Duplicate or missing source identifiers raise an error because they would make `unit_id` ambiguous.
 
+Missing spreadsheet values in required text, industry, year, or source-identifier fields raise an error; they are not converted into model inputs such as `"nan"`.
+
 The package returns one row per extracted or supplied unit. It does not aggregate predictions to, for example, a firm-year measure; users retain control over any subsequent counting, weighting, dummy creation, or aggregation.
 
 For very large collections of complete filings, submit manageable DataFrame chunks and save each result before continuing. This prevents all extracted units from thousands of filings being held in memory simultaneously.
@@ -193,7 +210,7 @@ Request the complete auditable output to inspect model probabilities and process
 full_results = classifier.predict(text, unit="sentence", output="full")
 ```
 
-Full output adds source lineage, industry and year, all eight `prob_*` columns, token and window counts, long-input actions, and the device used.
+Full output adds source lineage, industry and year, all eight `prob_*` columns, token and window counts, long-input actions, the uncategorized rule, a human-readable assignment reason, and the device used.
 
 Compact-output probabilities are rounded to three decimals for readability. Threshold decisions are made using the original full-precision values. `output="full"` preserves full precision in `predicted_subcat_probs`, `top_subcat_prob`, and all eight `prob_*` columns.
 
@@ -229,6 +246,10 @@ adjusted = classifier.predict(
 
 Users should inspect the full probability output and validate alternative thresholds for their own corpus and research setting.
 
+For `term` and `noun_chunk`, the default `gatekeeper` rule first examines the uncategorized probability. If it is at least 0.25, the output is `uncategorized` even when an innovation probability also passes its threshold. For example, sustainability = 0.779 and uncategorized = 0.354 produces `uncategorized` because 0.354 exceeds the gatekeeper threshold. For `sentence` and `paragraph`, the default `fallback` rule assigns `uncategorized` only when no innovation subcategory passes its threshold. In full output, inspect `uncategorized_rule`, `assignment_reason`, and all eight probabilities to audit the decision.
+
+Industry and year are model inputs—not merely descriptive metadata—for contextual `term` and `noun_chunk` classification. The same phrase can therefore receive different scores across industries or years. Choose a documented industry classification, apply it consistently across the research sample, and do not select the industry after observing model results. Use `context_mode="none"` only as an explicitly documented alternative application.
+
 ## Long documents
 
 A long source document is not passed to BERT as one input when `unit="noun_chunk"`, `"sentence"`, or `"paragraph"`:
@@ -239,7 +260,9 @@ A long source document is not passed to BERT as one input when `unit="noun_chunk
 
 Do not pass an entire filing with `unit="term"`. Long term, noun-chunk, and sentence units raise an error by default rather than being silently truncated. Users must explicitly select `long_text_strategy="truncate"` or `"window"` when that behavior is intended.
 
-Paragraph windows use category-wise maximum probabilities. These values indicate whether relevant evidence appears anywhere in the paragraph; they are not calibrated probabilities for the paragraph as a whole. If a long source has no blank-line paragraph boundaries, the package warns that it may be treated as one giant paragraph.
+Beginning with version 0.2.2, paragraph windows are constructed by explicitly slicing the complete content-token sequence. Every content token is covered by at least one window, including the end of the paragraph, and internal checks fail rather than returning incomplete coverage. The default `max_length=160` includes model special tokens, and the default `stride=32` repeats 32 content tokens between adjacent windows.
+
+Paragraph windows use category-wise maximum probabilities. These values indicate whether relevant evidence appears anywhere in the paragraph; they are not calibrated probabilities for the paragraph as a whole. If a long source has no blank-line paragraph boundaries, the package warns that it may be treated as one giant paragraph. Explicitly selecting `long_text_strategy="truncate"` omits content after `max_length`; use it only when that loss is intended.
 
 For 10-K research, extracting the intended filing section before classification is recommended. Processing an entire filing introduces risk factors, MD&A, notes, controls, and other content that may change the measured construct. If complete filings are required, retain section identifiers and process each section as a separate source.
 

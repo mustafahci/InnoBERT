@@ -39,21 +39,27 @@ The primary use is multi-label classification of innovation-related terms extrac
 
 It is not intended for individual-level decisions, high-stakes automated decisions, or claims about realized innovation without separate validation.
 
+In noun-chunk mode, surrounding statements are removed before classification. Negation, prospective language, attribution to competitors or other actors, and evidence of actual adoption are therefore outside the noun-chunk classifier's output. A label identifies the innovation type associated with an extracted phrase; it does not establish what the focal firm did.
+
 ## Preprocessing and thresholds
 
 The noun-chunk mode preserves internal hyphens, removes specified generic modifiers, lemmatizes noun heads, splits selected coordinated noun phrases, limits phrases to four terms, removes subphrases, and optionally removes filer-name tokens. Its corpus-derived stoplist is frozen in the Python package.
 
 Default thresholds are 0.65, 0.45, 0.55, 0.55, 0.45, 0.50, 0.50, and 0.25 in the label order above.
 
+For contextual term and noun-chunk inputs, the default uncategorized rule is a gatekeeper: an uncategorized probability at or above 0.25 suppresses innovation labels. Sentence and paragraph modes instead use uncategorized as a fallback when no innovation subcategory passes its threshold. Industry and year are part of the contextual model input and must be defined consistently across a research sample.
+
 ## Limitations
 
 - The training data are not distributed with this release.
 - Sentence and paragraph inputs differ from the contextual term format used for training.
 - Windowed paragraph scores use category-wise maxima and are not calibrated paragraph-level probabilities.
+- Noun-chunk predictions do not capture negation, adoption status, timing, or attribution from the surrounding sentence.
 - Results can vary if noun chunks are extracted with a different spaCy model or version.
 - Disclosure language is not equivalent to realized innovation capability or outcomes.
 - The training data and annotations are not distributed, so users cannot reconstruct training from this release.
 - Applying the classifier outside the disclosure setting, industries, or years represented in development requires separate validation.
+- Research accuracy for a new corpus or construct should be evaluated against a labelled sample from that intended setting.
 
 ## Citation
 

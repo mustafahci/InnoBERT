@@ -1,5 +1,7 @@
 import unittest
 from contextlib import nullcontext
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -8,6 +10,8 @@ import numpy as np
 from innobert.classifier import (
     InnoBERT,
     SUMMARY_COLUMNS,
+    _build_complete_token_windows,
+    _assignment_reason,
     _select_highest_probability_assignment,
     _summarize_assignments,
     assign_labels,
@@ -36,7 +40,12 @@ class ThresholdTests(unittest.TestCase):
 class DecisionRuleTests(unittest.TestCase):
     def test_gatekeeper_overrides_innovation_labels(self):
         probs = [0.9, 0.8, 0, 0, 0, 0, 0, 0.3]
-        self.assertEqual(assign_labels(probs, DEFAULT_THRESHOLDS, "gatekeeper"), ["inno_uncategorized"])
+        predicted = assign_labels(probs, DEFAULT_THRESHOLDS, "gatekeeper")
+        self.assertEqual(predicted, ["inno_uncategorized"])
+        self.assertEqual(
+            _assignment_reason(probs, predicted, DEFAULT_THRESHOLDS, "gatekeeper"),
+            "uncategorized gatekeeper: 0.300 >= 0.250; innovation labels suppressed",
+        )
 
     def test_highest_probability_label_respects_gatekeeper_assignment(self):
         probs = [0.1, 0.7, 0, 0, 0, 0, 0, 0.3]
@@ -119,6 +128,8 @@ class OutputTests(unittest.TestCase):
         self.assertEqual(result.loc[0, "predicted_subcat_probs"], [0.912345, 0.701234])
         self.assertEqual(result.loc[0, "top_subcat_prob"], 0.912345)
         self.assertEqual(result.loc[0, "prob_inno_product"], 0.912345)
+        self.assertEqual(result.loc[0, "uncategorized_rule"], "gatekeeper")
+        self.assertEqual(result.loc[0, "assignment_reason"], "assigned subcategory threshold(s) met")
 
     def test_long_term_errors_instead_of_silent_truncation(self):
         classifier = InnoBERT(_FakeTokenizer(), _FakeModel(), _FakeDevice())
@@ -158,6 +169,20 @@ class InputTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "empty"):
             normalize_documents(["   "])
 
+    def test_dataframe_missing_text_is_not_stringified(self):
+        import pandas as pd
+
+        frame = pd.DataFrame({"text": [float("nan")]})
+        with self.assertRaisesRegex(TypeError, "must be a string"):
+            normalize_documents(frame)
+
+    def test_dataframe_missing_industry_is_not_stringified(self):
+        import pandas as pd
+
+        frame = pd.DataFrame({"text": ["new platform"], "industry": [pd.NA], "year": [2024]})
+        with self.assertRaisesRegex(ValueError, "Missing industry"):
+            normalize_documents(frame, require_context=True)
+
     def test_dataframe_composite_source_id_and_metadata(self):
         import pandas as pd
 
@@ -192,6 +217,47 @@ class SegmentationTests(unittest.TestCase):
 
     def test_paragraph_split_precedes_whitespace_cleanup(self):
         self.assertEqual(split_paragraphs("First paragraph.\n\nSecond   paragraph."), ["First paragraph.", "Second paragraph."])
+
+
+class LongTextWindowTests(unittest.TestCase):
+    def test_windows_cover_every_content_token_including_the_end(self):
+        tokenizer = _WindowTokenizer()
+        text = " ".join(f"token{i}" for i in range(800))
+        windows = _build_complete_token_windows(tokenizer, text, max_length=160, stride=32)
+        covered = set()
+        for window in windows:
+            self.assertLessEqual(len(window["input_ids"]), 160)
+            covered.update(window["input_ids"][1:-1])
+        self.assertEqual(covered, set(range(800)))
+        self.assertIn(799, windows[-1]["input_ids"])
+
+    def test_invalid_stride_uses_actual_special_token_capacity(self):
+        with self.assertRaisesRegex(ValueError, "content capacity"):
+            _build_complete_token_windows(
+                _WindowTokenizer(), "one two three", max_length=10, stride=8
+            )
+
+    def test_supported_huggingface_bert_tokenizers_cover_final_token(self):
+        try:
+            from transformers import BertTokenizer, BertTokenizerFast
+        except ImportError:
+            self.skipTest("Transformers is not installed in this lightweight test environment.")
+        with TemporaryDirectory() as directory:
+            vocab_path = Path(directory) / "vocab.txt"
+            tokens = ["[PAD]", "[UNK]", "[CLS]", "[SEP]", "[MASK]"] + [
+                f"token{i}" for i in range(800)
+            ]
+            vocab_path.write_text("\n".join(tokens), encoding="utf-8")
+            text = " ".join(f"token{i}" for i in range(800))
+            for tokenizer_class in (BertTokenizer, BertTokenizerFast):
+                tokenizer = tokenizer_class(vocab_file=str(vocab_path), do_lower_case=False)
+                content_ids = tokenizer(text, add_special_tokens=False)["input_ids"]
+                windows = _build_complete_token_windows(
+                    tokenizer, text, max_length=160, stride=32
+                )
+                self.assertGreater(len(windows), 1)
+                self.assertTrue(all(len(window["input_ids"]) <= 160 for window in windows))
+                self.assertIn(content_ids[-1], windows[-1]["input_ids"])
 
 
 class _FakeDevice:
@@ -230,6 +296,22 @@ class _FakeModel:
             (rows, 1),
         )
         return SimpleNamespace(logits=_FakeTensor(probabilities))
+
+
+class _WindowTokenizer:
+    def __call__(self, text, *, add_special_tokens=True, **kwargs):
+        ids = list(range(len(text.split())))
+        return {"input_ids": [1001, *ids, 1002] if add_special_tokens else ids}
+
+    def num_special_tokens_to_add(self, pair=False):
+        return 2
+
+    def prepare_for_model(self, ids, **kwargs):
+        return {
+            "input_ids": [1001, *ids, 1002],
+            "attention_mask": [1] * (len(ids) + 2),
+            "token_type_ids": [0] * (len(ids) + 2),
+        }
 
 
 if __name__ == "__main__":

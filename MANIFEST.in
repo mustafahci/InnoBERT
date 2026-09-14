@@ -2,6 +2,7 @@ include README.md
 include MODEL_CARD.md
 include LICENSE
 include NOTICE
+include CHANGELOG.md
 include CITATION.cff
 recursive-include examples *.ipynb
 recursive-include tests *.py

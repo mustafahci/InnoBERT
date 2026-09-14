@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from numbers import Integral
 from types import MappingProxyType
 from collections import Counter
+import math
 
 
 @dataclass(frozen=True)
@@ -85,8 +86,8 @@ def normalize_documents(
     _validate_source_ids(source_ids)
 
     if require_context:
-        missing_industry = [i for i, value in enumerate(industries) if value is None or not str(value).strip()]
-        missing_year = [i for i, value in enumerate(years) if value is None]
+        missing_industry = [i for i, value in enumerate(industries) if _is_missing(value) or not str(value).strip()]
+        missing_year = [i for i, value in enumerate(years) if _is_missing(value)]
         if missing_industry or missing_year:
             raise ValueError(
                 "industry and year are required when context_mode='industry_year'. "
@@ -99,9 +100,9 @@ def normalize_documents(
             source_index=i,
             source_id=source_ids[i],
             text=text,
-            industry=None if industries[i] is None else str(industries[i]).strip(),
+            industry=None if _is_missing(industries[i]) else str(industries[i]).strip(),
             year=normalized_years[i],
-            filer_name=None if filer_names[i] is None else str(filer_names[i]).strip(),
+            filer_name=None if _is_missing(filer_names[i]) else str(filer_names[i]).strip(),
             metadata=metadata[i],
         )
         for i, text in enumerate(texts)
@@ -125,13 +126,13 @@ def _normalize_column_names(value, name):
 
 
 def _format_source_id_part(value, row):
-    if value is None or (isinstance(value, float) and value != value):
+    if _is_missing(value):
         raise ValueError(f"source_id_cols contains a missing value at row {row}.")
     return str(value)
 
 
 def _validate_source_ids(values):
-    missing = [i for i, value in enumerate(values) if value is None or not str(value).strip()]
+    missing = [i for i, value in enumerate(values) if _is_missing(value) or not str(value).strip()]
     if missing:
         raise ValueError(f"source_id contains missing or empty value(s) at row(s) {missing[:10]}.")
     normalized = [str(value) for value in values]
@@ -163,7 +164,7 @@ def _as_list(value, name):
 def _validate_texts(values):
     out = []
     for i, value in enumerate(values):
-        if value is None or not isinstance(value, str):
+        if _is_missing(value) or not isinstance(value, str):
             raise TypeError(f"Text at row {i} must be a string; received {type(value).__name__}.")
         value = value.strip()
         if not value:
@@ -193,7 +194,7 @@ def _broadcast(value, n, name, allow_scalar=True):
 
 
 def _normalize_year(value, row):
-    if value is None:
+    if _is_missing(value):
         return None
     if isinstance(value, bool):
         raise TypeError(f"year at row {row} must be an integer, not bool.")
@@ -214,3 +215,25 @@ def _normalize_year(value, row):
     if not 1800 <= numeric <= 2200:
         raise ValueError(f"year at row {row} must lie between 1800 and 2200; received {numeric}.")
     return numeric
+
+
+def _is_missing(value):
+    """Recognize scalar spreadsheet-style missing values without stringifying them."""
+    if value is None:
+        return True
+    try:
+        import pandas as pd
+        missing = pd.isna(value)
+        if isinstance(missing, bool):
+            return missing
+        if type(missing).__module__.startswith("numpy") and getattr(missing, "ndim", 1) == 0:
+            return bool(missing)
+    except (TypeError, ValueError):
+        pass
+    if isinstance(value, float):
+        return math.isnan(value)
+    try:
+        missing = value != value
+        return bool(missing) if isinstance(missing, bool) else False
+    except (TypeError, ValueError):
+        return False
