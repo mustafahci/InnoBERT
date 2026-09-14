@@ -8,7 +8,7 @@ In the measurement approach developed by Ahci and Joos (2026) in _Beyond Inventi
 
 When InnoBERT is used independently of this measurement procedure, its output should be interpreted as a semantic category assignment. Drawing conclusions about innovation additionally requires information about novelty, context, timing, and attribution.
 
-The seven substantive subcategories are product, process, organizational, marketing, business model, sustainability, and AI. This innovation-type framework is drawing on the Oslo Manual 2018, however, InnoBERT extends the reporting taxonomy with business model, sustainability, and AI. An eighth category, `uncategorized`, rejects terms that may not belong to a substantive innovation category.
+The seven substantive subcategories are product, process, organizational, marketing, business model, sustainability, and AI. This innovation-type framework is drawing on the Oslo Manual 2018, however, InnoBERT extends the reporting taxonomy with business model, sustainability, and AI. An eighth category, `uncategorized`, rejects terms that may not belong to a substantive innovation category (e.g., regular non-innovation terms, such as 'mergers and acquisitions', 'cash flow statement', 'financing activities', etc.).
 
 The seven substantive subcategories are also organized into four broader categories:
 
