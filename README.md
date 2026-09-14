@@ -29,7 +29,7 @@ Install [Anaconda or Miniconda](https://www.anaconda.com/docs/getting-started/ma
 conda create -n innobert python=3.11 -y
 conda activate innobert
 python -m pip install --upgrade pip
-python -m pip install "innobert[noun-chunks,notebook] @ git+https://github.com/mustafahci/InnoBERT.git@v0.2.2"
+python -m pip install "innobert[noun-chunks,notebook] @ git+https://github.com/mustafahci/InnoBERT.git@v0.2.4"
 python -m spacy download en_core_web_lg
 python -m ipykernel install --user --name innobert --display-name "Python (InnoBERT)"
 jupyter lab
@@ -40,7 +40,7 @@ Select **Python (InnoBERT)** as the notebook kernel. Always use `python -m pip` 
 ### Existing Python or IPython environment
 
 ```bash
-python -m pip install "innobert[noun-chunks,notebook] @ git+https://github.com/mustafahci/InnoBERT.git@v0.2.2"
+python -m pip install "innobert[noun-chunks,notebook] @ git+https://github.com/mustafahci/InnoBERT.git@v0.2.4"
 python -m spacy download en_core_web_lg
 ```
 
@@ -51,7 +51,7 @@ Noun-chunk extraction uses `en_core_web_lg` by default to preserve the preproces
 Run these cells at the beginning of a Colab notebook:
 
 ```python
-%pip install "innobert[noun-chunks] @ git+https://github.com/mustafahci/InnoBERT.git@v0.2.2"
+%pip install "innobert[noun-chunks] @ git+https://github.com/mustafahci/InnoBERT.git@v0.2.4"
 !python -m spacy download en_core_web_lg
 ```
 

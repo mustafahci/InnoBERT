@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4 — 2026-09-14
+
+- Corrected the distribution metadata discovered during public installation verification.
+- Synchronized package, citation, notebook, and pinned-install version references.
+- No classification logic, thresholds, or model weights changed.
+
 ## 0.2.2 — 2026-09-14
 
 - Fixed a correctness bug that could omit overflow content from long paragraph inputs under some tokenizer and Transformers combinations.
