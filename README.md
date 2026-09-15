@@ -52,7 +52,7 @@ Noun-chunk extraction uses `en_core_web_lg` by default to preserve the preproces
 
 ## Hugging Face access
 
-The public model downloads from `mustafahci/InnoBERT` without a Hugging Face account or access token. Authentication is necessary only if access to the model repository is restricted in the future. We also provide a simple interface app using Hugging Face Spaces for non-technical users or simple tasks. 
+The public model downloads from `mustafahci/InnoBERT` without a Hugging Face account or access token. Authentication is necessary only if access to the model repository is restricted in the future. We also provide a simple [interface app](https://huggingface.co/spaces/mustafahci/InnoBERT-App) using Hugging Face Spaces for non-technical users or simple tasks. See more details in [example notebook](examples/InnoBERT_manual.ipynb)
 
 ## Load the model
 
