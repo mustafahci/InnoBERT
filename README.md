@@ -2,7 +2,7 @@
 
 InnoBERT helps researchers classify business language into seven economically meaningful innovation categories: **product, process, organizational, marketing, business model, sustainability, and artificial intelligence (AI)** informed by Oslo Manual on Innovation (2005 & 2018). It can process individual terms, raw documents, aligned lists, and pandas DataFrames on a CPU, CUDA-enabled GPU, or Apple MPS device.
 
-We also provide a simple [interface app](https://huggingface.co/spaces/mustafahci/InnoBERT-App) that requires no code or installation for non-technical users or simple tasks. Check this first to see what InnoBERT can offer and help your research.
+We also provide a simple [interface app](https://huggingface.co/spaces/mustafahci/InnoBERT-App) that requires no code or installation for non-technical users or simple tasks. Check this first to see what InnoBERT can offer and hoe it can help for your research.
 
 For more details regarding coding exercises, see [example manual notebook](examples/InnoBERT_manual.ipynb)!
  
