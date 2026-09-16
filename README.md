@@ -2,10 +2,10 @@
 
 InnoBERT helps researchers classify business language into seven economically meaningful categories: **product, process, organizational, marketing, business model, sustainability, and artificial intelligence (AI)**. It can process individual terms, raw documents, aligned lists, and pandas DataFrames on a CPU, CUDA-enabled GPU, or Apple MPS device.
 
-Importantly, InnoBERT classifies the semantic content of submitted text, but it does not determine whether that language is novel. For example, it may classify “machine learning” as AI, but it does not establish whether the term is new for the firm, relative to other firms, or at that point in time. An InnoBERT classification should therefore not, by itself, be interpreted as evidence of innovation.
+We also provide a simple [interface app](https://huggingface.co/spaces/mustafahci/InnoBERT-App) that requires no code or installation for non-technical users or simple tasks. Check this first to see what InnoBERT can offer and help your research.
 
-The measurement approach developed by Ahci and Joos (2026) in _Beyond Invention: The Composition and Development of Innovation-Related Capabilities_ separates these tasks. It first identifies novel terms by comparing firm disclosures with prior economy-wide business disclosures and then uses InnoBERT to classify those terms. When used independently, InnoBERT’s output should be interpreted as a semantic category assignment. See Ahci and Joos (2026) below for the complete measure construction and interpretation.
-
+For more details regarding coding exercises, see [example manual notebook](examples/InnoBERT_manual.ipynb)!
+ 
 ## Category framework
 
 InnoBERT reports seven substantive subcategories: **product, process, organizational, marketing, business model, sustainability, and AI**. Drawing on the granular innovation types in the Oslo Manual (2005) and the broader product and business-process distinction in the Oslo Manual (2018), these subcategories are organized into four broad categories:
@@ -52,7 +52,7 @@ Noun-chunk extraction uses `en_core_web_lg` by default to preserve the preproces
 
 ## Hugging Face access
 
-The public model downloads from `mustafahci/InnoBERT` without a Hugging Face account or access token. Authentication is necessary only if access to the model repository is restricted in the future. We also provide a simple [interface app](https://huggingface.co/spaces/mustafahci/InnoBERT-App) that requires no code or installation for non-technical users or simple tasks. See more details in [example notebook](examples/InnoBERT_manual.ipynb)!
+The public model downloads from `mustafahci/InnoBERT` without a Hugging Face account or access token. Authentication is necessary only if access to the model repository is restricted in the future.
 
 ## Load the model
 
@@ -290,6 +290,11 @@ results.to_csv("innobert_results.csv", index=False)
 ```
 
 Run it from the activated environment with `python your_script.py`.
+## Disclaimer:
+
+Importantly, InnoBERT classifies the semantic content of submitted text, but it does not determine whether that language is novel. For example, it may classify “machine learning” as AI, but it does not establish whether the term is new for the firm, relative to other firms, or at that point in time. An InnoBERT classification should therefore not, by itself, be interpreted as evidence of innovation.
+
+The measurement approach developed by Ahci and Joos (2026) in _Beyond Invention: The Composition and Development of Innovation-Related Capabilities_ separates these tasks. It first identifies novel terms by comparing firm disclosures with prior economy-wide business disclosures and then uses InnoBERT to classify those terms. When used independently, InnoBERT’s output should be interpreted as a semantic category assignment. See Ahci and Joos (2026) below for the complete measure construction and interpretation.
 
 ## Common errors
 
